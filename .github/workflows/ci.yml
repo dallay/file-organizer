@@ -1,0 +1,59 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: quality (fmt + clippy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1 (rolling tag, pinned)
+      - name: cargo fmt -- --check
+        run: cargo fmt -- --check
+      - name: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1 (rolling tag, pinned)
+      - name: cargo test
+        run: cargo test
+
+  agentsync:
+    name: agentsync (instruction drift)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: AgentSync apply in isolated copy, then blocking status
+        run: |
+          rm -rf /tmp/agentsync-verify
+          cp -a "$GITHUB_WORKSPACE" /tmp/agentsync-verify
+          cd /tmp/agentsync-verify
+          # Apply in the isolated copy so .gitignore changes are never
+          # persisted to the committed checkout. --no-gitignore skips the
+          # managed-block write entirely.
+          npx --yes @dallay/agentsync@1.45.2 apply --no-gitignore
+          # Blocking assertion: fails (exit != 0) on configuration or
+          # generated-target drift. Windows CI is never required to create
+          # AgentSync symlinks.
+          npx --yes @dallay/agentsync@1.45.2 status --json
