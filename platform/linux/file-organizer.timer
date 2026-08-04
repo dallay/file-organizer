@@ -1,0 +1,10 @@
+[Unit]
+Description=Ejecuta File Organizer periódicamente
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

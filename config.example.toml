@@ -1,0 +1,15 @@
+# Copia este archivo a:
+# macOS/Linux: ~/.config/file-organizer/config.toml
+# Windows: %APPDATA%\\file-organizer\\config.toml
+
+source_directories = ["~/Downloads", "~/Desktop/Por ordenar"]
+recursive = false
+on_conflict = "rename" # skip | rename | overwrite
+min_age_seconds = 60
+ignore_hidden = true
+log_file = "~/Library/Logs/FileOrganizer.log"
+
+# Reglas opcionales. Sobrescriben las reglas integradas y aceptan nuevas extensiones.
+[extensions]
+# psd = "Diseño"
+# tex = "Documentos/LaTeX"
