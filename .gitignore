@@ -1,0 +1,18 @@
+# Ordinary Rust and system ignores — intentionally OUTSIDE the AgentSync
+# managed block below. AgentSync owns only the marker-delimited block.
+target/
+.DS_Store
+
+# START AI Agent Symlinks
+.agents/skills/*.bak
+.claude/commands/
+.claude/skills/
+.github/copilot-instructions.md
+.github/copilot-instructions.md.bak
+.vscode/mcp.json
+/.mcp.json
+/AGENTS.md
+/AGENTS.md.bak
+/CLAUDE.md
+/CLAUDE.md.bak
+# END AI Agent Symlinks

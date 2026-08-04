@@ -1,0 +1,56 @@
+# AgentSync Configuration
+# Source of truth for AI agent instructions. Generated destinations are
+# symlinks reconciled by `agentsync apply`; CI enforces drift via
+# `agentsync status --json`.
+#
+# Maintainer-approved targets (design.md, 2026-08-04):
+#   - root    -> AGENTS.md
+#   - claude  -> CLAUDE.md
+#   - copilot -> .github/copilot-instructions.md
+# OpenCode consumes the root AGENTS.md, so it deliberately has NO target
+# here. MCP is out of scope and MUST NOT be generated.
+
+source_dir = "."
+
+# Gitignore management: AgentSync owns ONLY the marker-delimited block of
+# generated destinations. Ordinary ignores (target/, .DS_Store) live outside
+# that block in the root .gitignore.
+[gitignore]
+enabled = true
+marker = "AI Agent Symlinks"
+
+# -----------------------------------------------------------------------------
+# Root AGENTS.md (consumed by OpenCode and any tool looking at the repo root)
+# -----------------------------------------------------------------------------
+[agents.root]
+enabled = true
+description = "Root AGENTS.md"
+
+[agents.root.targets.instructions]
+source = "AGENTS.md"
+destination = "AGENTS.md"
+type = "symlink"
+
+# -----------------------------------------------------------------------------
+# Claude Code
+# -----------------------------------------------------------------------------
+[agents.claude]
+enabled = true
+description = "Claude Code - Anthropic's AI coding assistant"
+
+[agents.claude.targets.instructions]
+source = "AGENTS.md"
+destination = "CLAUDE.md"
+type = "symlink"
+
+# -----------------------------------------------------------------------------
+# GitHub Copilot
+# -----------------------------------------------------------------------------
+[agents.copilot]
+enabled = true
+description = "GitHub Copilot - VS Code and GitHub integrated AI"
+
+[agents.copilot.targets.instructions]
+source = "AGENTS.md"
+destination = ".github/copilot-instructions.md"
+type = "symlink"
