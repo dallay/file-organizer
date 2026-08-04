@@ -1,0 +1,5 @@
+# Pins the Rust toolchain for all contributors and CI jobs.
+# Channel: stable; required components: rustfmt + clippy.
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]

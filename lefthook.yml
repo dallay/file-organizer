@@ -1,0 +1,37 @@
+# Lefthook configuration — local quality gates and AgentSync refresh hooks.
+# Docs: https://github.com/evilmartians/lefthook
+min_version: 2.1.10
+
+# Formatting is cheap and runs on every commit.
+pre-commit:
+  commands:
+    fmt:
+      run: cargo fmt -- --check
+
+# The broad quality gate belongs before pushes; both commands block on failure.
+pre-push:
+  commands:
+    clippy:
+      run: cargo clippy --all-targets --all-features -- -D warnings
+    test:
+      run: cargo test
+
+# Lifecycle hooks refresh generated instruction symlinks after Git operations.
+# `|| true` keeps Git operations non-blocking when AgentSync is unavailable or
+# symlinks cannot be created (e.g., missing Node, Windows without Developer
+# Mode). CI enforces drift via `agentsync status --json`; run the same command
+# locally as a health check.
+post-checkout:
+  commands:
+    agentsync:
+      run: npx --yes @dallay/agentsync@1.45.2 apply || true
+
+post-merge:
+  commands:
+    agentsync:
+      run: npx --yes @dallay/agentsync@1.45.2 apply || true
+
+post-rewrite:
+  commands:
+    agentsync:
+      run: npx --yes @dallay/agentsync@1.45.2 apply || true
