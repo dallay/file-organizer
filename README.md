@@ -43,7 +43,11 @@ cp config.example.toml "$HOME/.config/organiza/config.toml"
 On Windows, copy the file to `%APPDATA%\\organiza\\config.toml`. Edit the folders and run:
 
 ```bash
+# macOS/Linux
 organiza --config ~/.config/organiza/config.toml validate-config
+
+# Windows (PowerShell)
+organiza --config $env:APPDATA\organiza\config.toml validate-config
 ```
 
 ## Run
@@ -122,7 +126,7 @@ The lock is created with `create_dir`, so it does not rely on `flock` and works 
 ```bash
 mkdir -p "$HOME/.local/bin" "$HOME/Library/LaunchAgents"
 cp target/release/organiza "$HOME/.local/bin/"
-sed "s#YOUR_USERNAME#$(whoami)#" platform/macos/com.organiza.plist.example \
+sed "s#TU_USUARIO#$(whoami)#" platform/macos/com.organiza.plist.example \
   > "$HOME/Library/LaunchAgents/com.organiza.plist"
 launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.organiza.plist"
 ```
@@ -142,16 +146,18 @@ systemctl --user enable --now organiza.timer
 
 ### Windows with Task Scheduler
 
-After copying `organiza.exe` to a permanent path and creating the TOML at `%APPDATA%\\organiza\\config.toml`:
+After copying `organiza.exe` to a permanent location (e.g., `C:\Users\YOUR_USERNAME\.local\bin\organiza.exe`) and creating the TOML at `%APPDATA%\\organiza\\config.toml`:
 
 ```powershell
 schtasks /Create /TN "organiza" /SC MINUTE /MO 5 `
-  /TR "C:\\Users\\YOUR_USERNAME\\.local\\bin\\organiza.exe run" /F
+  /TR "C:\Users\YOUR_USERNAME\.local\bin\organiza.exe run" /F
 ```
+
+Replace `YOUR_USERNAME` with your actual Windows username, or adjust the path to match where you copied the executable.
 
 ## Current scope
 
-The move operation uses `rename`, which is atomic within the same volume. If the source and destination are on different volumes, an error is reported instead of deleting or partially copying the file.
+The move operation uses `rename`, which is atomic within the same volume. If the source and destination are on different volumes, an error is reported instead of partially copying the file. When `on_conflict = "overwrite"` is configured and a cross-volume move fails, an existing destination file may be removed before the error is reported; for cross-volume safety, use `on_conflict = "rename"` or `on_conflict = "skip"`.
 
 ## Development tooling
 
