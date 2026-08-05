@@ -708,10 +708,14 @@ mod tests {
 
     /// The crate must be published as `organiza` (RDP-1 rebrand); the binary
     /// name and every distribution artifact derive from this package name.
+    ///
+    /// We intentionally do not assert `CARGO_PKG_VERSION` here: release-please
+    /// bumps the version on every release and a hardcoded literal would fail
+    /// the next release PR. Version synchronization is validated separately
+    /// by the release tooling (`scripts/update-versions.js` + manifest).
     #[test]
     fn package_is_named_organiza() {
         assert_eq!(env!("CARGO_PKG_NAME"), "organiza");
-        assert_eq!(env!("CARGO_PKG_VERSION"), "0.1.0");
     }
 
     /// The default config path must live under the rebranded `organiza`
