@@ -3,4 +3,4 @@ Description=Organiza archivos por tipo
 
 [Service]
 Type=oneshot
-ExecStart=%h/.local/bin/file-organizer run
+ExecStart=%h/.local/bin/organiza run

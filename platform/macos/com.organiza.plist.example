@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.file-organizer</string>
+  <string>com.organiza</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/TU_USUARIO/.local/bin/file-organizer</string>
+    <string>/Users/TU_USUARIO/.local/bin/organiza</string>
     <string>run</string>
   </array>
   <key>StartInterval</key>
@@ -14,8 +14,8 @@
   <key>RunAtLoad</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>/tmp/file-organizer.log</string>
+  <string>/tmp/organiza.log</string>
   <key>StandardErrorPath</key>
-  <string>/tmp/file-organizer.error.log</string>
+  <string>/tmp/organiza.error.log</string>
 </dict>
 </plist>
