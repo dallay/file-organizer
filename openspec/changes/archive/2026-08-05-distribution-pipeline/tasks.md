@@ -70,6 +70,6 @@ Chain strategy: github-stacked-prs (resolved by user: PR1 base=main, PR2 base=PR
 
 ## Phase 8: Verification — spec scenarios (sdd-verify)
 
-- [ ] 8.1 RDP scenarios: rebranded crate, license present, version-sync PR diff (8 refs), wrapper spawn + unsupported, exact pins, dependency-order gate, assets + .sha256, crates gate, --provenance.
-- [ ] 8.2 CD + CQV scenarios: image tags, multi-arch, non-root+tini, registry-auth halt; pinned actions, gated publish, documented recovery + release rollback.
-- [ ] 8.3 Final gates: cargo gate, tsc, grep audit, agentsync drift clean; update state.yaml (tasks complete → apply).
+- [x] 8.1 RDP scenarios: rebranded crate, license present, version-sync PR diff (8 refs), wrapper spawn + unsupported, exact pins, dependency-order gate, assets + .sha256, crates gate, --provenance. Evidence: verify-report.md §A1 (10/10 PASS).
+- [x] 8.2 CD + CQV scenarios: image tags, multi-arch, non-root+tini, registry-auth halt; pinned actions, gated publish, documented recovery + release rollback. Evidence: verify-report.md §A2 (4/4) + §A3 (3/3 PASS).
+- [x] 8.3 Final gates: cargo gate, tsc, grep audit, agentsync drift clean; update state.yaml (tasks complete → apply). Evidence: verify-report.md §B (all gates PASS) — state.yaml updated to verify complete → archive.

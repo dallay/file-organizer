@@ -1,5 +1,0 @@
-change: 2026-08-05-distribution-pipeline
-current_phase: verify complete (PASS WITH WARNINGS)
-completed: [explore, propose, spec, design, tasks, apply, verify]
-next: archive
-updated: 2026-08-05
