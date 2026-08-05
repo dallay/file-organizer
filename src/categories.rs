@@ -165,6 +165,33 @@ pub(crate) fn is_generated_category(path: &Path, root: &Path, config: &Config) -
         .any(|category_path| path == category_path || path.starts_with(category_path))
 }
 
+/// A category name is unsafe when it resolves outside the destination folder
+/// on any platform: absolute paths and parent traversal are rejected.
+/// Windows additionally treats drive-relative roots (`C:\...`, `\...`) and
+/// backslash-separated traversal as unsafe.
+pub(crate) fn is_unsafe_category_name(name: &str) -> bool {
+    let path = Path::new(name);
+    // Native absolute detection; `starts_with('/')` also catches POSIX-style
+    // roots on Windows, where `Path::is_absolute` requires a drive letter.
+    if path.is_absolute() || name.starts_with('/') {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        // A leading backslash is rooted to the current drive on Windows.
+        if name.starts_with('\\') {
+            return true;
+        }
+        // Windows accepts both separators for parent traversal.
+        name.split(|c| c == '/' || c == '\\')
+            .any(|part| part == "..")
+    }
+    #[cfg(not(windows))]
+    {
+        name.split('/').any(|part| part == "..")
+    }
+}
+
 /// Per-rule validation. Called from `lib::validate_config`.
 pub(crate) fn validate_categories(rules: &[CategoryRule]) -> anyhow::Result<()> {
     use std::collections::HashSet;
@@ -173,7 +200,7 @@ pub(crate) fn validate_categories(rules: &[CategoryRule]) -> anyhow::Result<()> 
         if rule.name.trim().is_empty() {
             anyhow::bail!("category name cannot be empty");
         }
-        if Path::new(&rule.name).is_absolute() || rule.name.split('/').any(|part| part == "..") {
+        if is_unsafe_category_name(&rule.name) {
             anyhow::bail!(
                 "category name '{}' is not a safe folder name (absolute path or '..' segment)",
                 rule.name
@@ -299,6 +326,31 @@ mod tests {
             },
             CategoryRule {
                 name: "Sub/../Other".to_string(),
+                extensions: vec!["x".to_string()],
+                replace: false,
+            },
+        ];
+        for rule in bad {
+            assert!(validate_categories(&[rule]).is_err());
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn validate_categories_rejects_windows_absolute_and_backslash_traversal() {
+        let bad = vec![
+            CategoryRule {
+                name: "C:\\Windows".to_string(),
+                extensions: vec!["x".to_string()],
+                replace: false,
+            },
+            CategoryRule {
+                name: "\\Windows".to_string(),
+                extensions: vec!["x".to_string()],
+                replace: false,
+            },
+            CategoryRule {
+                name: "..\\..\\etc".to_string(),
                 extensions: vec!["x".to_string()],
                 replace: false,
             },

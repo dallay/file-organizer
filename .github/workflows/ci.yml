@@ -58,8 +58,13 @@ jobs:
           # Apply in the isolated copy so .gitignore changes are never
           # persisted to the committed checkout. --no-gitignore skips the
           # managed-block write entirely.
-          npm exec --yes --package @dallay/agentsync@1.45.2 -- agentsync apply --no-gitignore
+          npm install --no-save --no-audit --no-fund @dallay/agentsync@1.45.2
+          # Invoke the bin entry directly with node. This never depends on
+          # npm bin-linking (node_modules/.bin), which behaves differently
+          # across npm versions on runners, and npm install prints the real
+          # registry error if it cannot fetch the package.
+          node ./node_modules/@dallay/agentsync/lib/index.js apply --no-gitignore
           # Blocking assertion: fails (exit != 0) on configuration or
           # generated-target drift. Windows CI is never required to create
           # AgentSync symlinks.
-          npm exec --yes --package @dallay/agentsync@1.45.2 -- agentsync status --json
+          node ./node_modules/@dallay/agentsync/lib/index.js status --json

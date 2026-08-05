@@ -12,7 +12,8 @@ mod categories;
 
 pub use categories::CategoryRule;
 pub(crate) use categories::{
-    category_for, is_generated_category, validate_categories, DEFAULT_CATEGORY,
+    category_for, is_generated_category, is_unsafe_category_name, validate_categories,
+    DEFAULT_CATEGORY,
 };
 
 #[derive(Debug, Clone, Copy, Default, Deserialize)]
@@ -143,7 +144,7 @@ fn validate_config(config: &Config) -> Result<()> {
         if extension.trim().is_empty() || category.trim().is_empty() {
             anyhow::bail!("extensions no puede contener claves o categorías vacías");
         }
-        if Path::new(category).is_absolute() || category.split('/').any(|part| part == "..") {
+        if is_unsafe_category_name(category) {
             anyhow::bail!("la categoría '{}' contiene una ruta no permitida", category);
         }
     }
@@ -825,7 +826,15 @@ mod tests {
 
     #[test]
     fn category_name_absolute_or_parent_traversal_rejected() {
-        let cases: &[&str] = &["/etc/passwd", "../escape", "Sub/../Other"];
+        #[cfg(not(windows))]
+        let windows_cases: &[&str] = &[];
+        #[cfg(windows)]
+        let windows_cases: &[&str] = &["C:\\Windows", "\\Windows", "..\\..\\etc"];
+        let cases: Vec<&str> = ["/etc/passwd", "../escape", "Sub/../Other"]
+            .iter()
+            .chain(windows_cases.iter())
+            .copied()
+            .collect();
         for bad in cases {
             let dir = tempfile::tempdir().unwrap();
             let path = dir.path().join("bad.toml");
@@ -1024,8 +1033,7 @@ mod tests {
         let temporary = tempfile::tempdir().unwrap();
         let xdg_dir = temporary.path().join(".config");
         fs::create_dir(&xdg_dir).unwrap();
-        let quoted =
-            format!("XDG_DOWNLOAD_DIR=\"$HOME/Downloads\"\nXDG_DESKTOP_DIR=\"$HOME/Desktop\"\n");
+        let quoted = "XDG_DOWNLOAD_DIR=\"$HOME/Downloads\"\nXDG_DESKTOP_DIR=\"$HOME/Desktop\"\n";
         fs::write(xdg_dir.join("user-dirs.dirs"), quoted).unwrap();
         let downloads = temporary.path().join("Downloads");
         fs::create_dir(&downloads).unwrap();
