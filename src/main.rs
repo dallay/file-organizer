@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
-use file_organizer::{default_config_path, load_config, run, RunOptions};
+use file_organizer::{default_config_path, load_config, resolve_config, run, RunOptions};
 use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
@@ -47,21 +47,23 @@ struct RunCommand {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let config_path = cli.config.unwrap_or_else(default_config_path);
+    // Cloned once at startup so resolve_config can distinguish the
+    // "user pointed --config at a missing path" branch from the
+    // "user said nothing and the default is absent" branch.
+    let config_path = cli.config.clone().unwrap_or_else(default_config_path);
 
     match cli.command {
         Command::ValidateConfig => {
-            let config = load_config(&config_path)
-                .with_context(|| format!("no se pudo validar {}", config_path.display()))?;
+            let config = match (cli.config.is_some(), config_path.exists()) {
+                (false, false) => file_organizer::Config::default(),
+                _ => load_config(&config_path)
+                    .with_context(|| format!("no se pudo validar {}", config_path.display()))?,
+            };
             println!("Configuración válida: {}", config_path.display());
             println!("Carpetas configuradas: {}", config.source_directories.len());
         }
         Command::Run(command) => {
-            let mut config = load_config(&config_path)
-                .with_context(|| format!("no se pudo leer {}", config_path.display()))?;
-            if !command.directories.is_empty() {
-                config.source_directories = command.directories;
-            }
+            let mut config = resolve_config(cli.config.as_deref(), &command.directories)?;
             if config.source_directories.is_empty() {
                 anyhow::bail!("no hay carpetas configuradas ni indicadas en la línea de comandos");
             }
