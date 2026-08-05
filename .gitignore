@@ -2,6 +2,11 @@
 # managed block below. AgentSync owns only the marker-delimited block.
 target/
 .DS_Store
+# npm wrapper build artifacts (outside the AgentSync block)
+npm/**/node_modules/
+npm/organiza/lib/
+npm/organiza/*.tgz
+npm/organiza-*.tgz
 # START AI Agent Symlinks
 .agents/skills/*.bak
 .claude/commands/

@@ -1,6 +1,24 @@
-# File Organizer en Rust
+# organiza en Rust
 
 Motor multiplataforma para macOS, Linux y Windows. La lógica de clasificación vive en un binario Rust; los schedulers de cada sistema operativo solo lo ejecutan.
+
+## Instalar
+
+Hay tres canales de instalación, todos publicados desde el mismo tag de release:
+
+```bash
+# 1. crates.io
+cargo install organiza
+
+# 2. npm (wrapper con binarios por plataforma)
+npm install -g @dallay/organiza
+
+# 3. Docker (multi-arquitectura linux/amd64 + linux/arm64)
+docker pull yacosta738/organiza
+docker pull ghcr.io/dallay/organiza
+```
+
+También puedes descargar el binario de tu plataforma desde los assets del [GitHub Release](https://github.com/dallay/file-organizer/releases).
 
 ## Compilar
 
@@ -11,28 +29,30 @@ cargo test
 cargo build --release
 ```
 
-El binario queda en `target/release/file-organizer` (`file-organizer.exe` en Windows).
+El binario queda en `target/release/organiza` (`organiza.exe` en Windows).
+
+> Las instrucciones de **Configurar**, **Instalar como servicio** y los launchers de `platform/` asumen un *source checkout* (build local desde el repositorio). Los usuarios que instalen via `cargo install organiza` o el wrapper npm `@dallay/organiza` pueden descargar `config.example.toml` y los launchers directamente desde [el repositorio en GitHub](https://github.com/dallay/file-organizer).
 
 ## Configurar
 
 ```bash
-mkdir -p "$HOME/.config/file-organizer"
-cp config.example.toml "$HOME/.config/file-organizer/config.toml"
+mkdir -p "$HOME/.config/organiza"
+cp config.example.toml "$HOME/.config/organiza/config.toml"
 ```
 
-En Windows, copia el archivo a `%APPDATA%\\file-organizer\\config.toml`. Edita las carpetas y ejecuta:
+En Windows, copia el archivo a `%APPDATA%\\organiza\\config.toml`. Edita las carpetas y ejecuta:
 
 ```bash
-file-organizer --config ~/.config/file-organizer/config.toml validate-config
+organiza --config ~/.config/organiza/config.toml validate-config
 ```
 
 ## Ejecutar
 
 ```bash
-file-organizer run --dry-run
-file-organizer run
-file-organizer run --verbose ~/Downloads
-file-organizer run --config ./config.toml --log /dev/null
+organiza run --dry-run
+organiza run
+organiza run --verbose ~/Downloads
+organiza run --config ./config.toml --log /dev/null
 ```
 
 Las carpetas indicadas al final sustituyen a `source_directories`. El comportamiento predeterminado espera 60 segundos, ignora ocultos y renombra conflictos (`archivo (1).pdf`).
@@ -76,20 +96,22 @@ md = "Docs"
 
 ## First-run behavior
 
-If you run `file-organizer run` before creating a config file, the binary synthesizes `Config::default()` and auto-detects a Downloads directory. The lookup order is:
+If you run `organiza run` before creating a config file, the binary synthesizes `Config::default()` and auto-detects a Downloads directory. The lookup order is:
 
-1. `FILE_ORGANIZER_DOWNLOADS` env var (if set and the path exists).
+1. `ORGANIZA_DOWNLOADS` env var (if set and the path exists).
 2. Linux: `XDG_DOWNLOAD_DIR` from `~/.config/user-dirs.dirs`.
 3. macOS: `~/Downloads`.
 4. Windows: `%USERPROFILE%/Downloads`, falling back to localized names (`Descargas`, `Téléchargements`, `Scaricati`, `下载`).
 
 **One-time reclassification of legacy folders.** If you previously ran an older Spanish-defaults version, your `~/Downloads/Imágenes/`, `~/Downloads/Documentos/`, etc. will not be re-entered on the next run because only the seven English names are recognized as generated categories. Files inside those legacy folders are picked up once and moved under the new English-named categories. After that single pass, the legacy folders are empty and can be removed manually.
 
-POSIX `launchd` and `systemd` schedulers that previously no-op'd (no config + no Downloads override) will begin organizing on each tick. Existing launchers in `platform/` are unchanged; the README is the only documentation to update.
+**One-time path change after rebrand.** The config directory moved from `~/.config/file-organizer` to `~/.config/organiza` (and `%APPDATA%\\organiza` on Windows), and the lock from `~/.cache/file-organizer.lock` to `~/.cache/organiza.lock`. Existing configs are not migrated automatically: copy your `config.toml` once to the new path and restart the scheduler. Legacy `Downloads` folders are handled as described above.
+
+POSIX `launchd` and `systemd` schedulers that previously no-op'd (no config + no Downloads override) will begin organizing on each tick. The launchers in `platform/` now invoke `organiza run`.
 
 ## Automatización por plataforma
 
-- **macOS:** usa Shortcuts o `launchd` para ejecutar `file-organizer run`.
+- **macOS:** usa Shortcuts o `launchd` para ejecutar `organiza run`.
 - **Linux:** usa el `systemd` user timer incluido en `platform/linux/`.
 - **Windows:** usa Task Scheduler con `schtasks`.
 
@@ -99,32 +121,32 @@ El lock se crea con `create_dir`, por lo que no depende de `flock` y funciona en
 
 ```bash
 mkdir -p "$HOME/.local/bin" "$HOME/Library/LaunchAgents"
-cp target/release/file-organizer "$HOME/.local/bin/"
-sed "s#TU_USUARIO#$(whoami)#" platform/macos/com.file-organizer.plist.example \
-  > "$HOME/Library/LaunchAgents/com.file-organizer.plist"
-launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.file-organizer.plist"
+cp target/release/organiza "$HOME/.local/bin/"
+sed "s#TU_USUARIO#$(whoami)#" platform/macos/com.organiza.plist.example \
+  > "$HOME/Library/LaunchAgents/com.organiza.plist"
+launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.organiza.plist"
 ```
 
-Para detenerlo: `launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.file-organizer.plist"`.
+Para detenerlo: `launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.organiza.plist"`.
 
 ### Linux con systemd user
 
 ```bash
 mkdir -p "$HOME/.local/bin" "$HOME/.config/systemd/user"
-cp target/release/file-organizer "$HOME/.local/bin/"
-cp platform/linux/file-organizer.service platform/linux/file-organizer.timer \
+cp target/release/organiza "$HOME/.local/bin/"
+cp platform/linux/organiza.service platform/linux/organiza.timer \
   "$HOME/.config/systemd/user/"
 systemctl --user daemon-reload
-systemctl --user enable --now file-organizer.timer
+systemctl --user enable --now organiza.timer
 ```
 
 ### Windows con Task Scheduler
 
-Después de copiar `file-organizer.exe` a una ruta permanente y crear el TOML en `%APPDATA%\\file-organizer\\config.toml`:
+Después de copiar `organiza.exe` a una ruta permanente y crear el TOML en `%APPDATA%\\organiza\\config.toml`:
 
 ```powershell
-schtasks /Create /TN "File Organizer" /SC MINUTE /MO 5 `
-  /TR "C:\\Users\\TU_USUARIO\\.local\\bin\\file-organizer.exe run" /F
+schtasks /Create /TN "organiza" /SC MINUTE /MO 5 `
+  /TR "C:\\Users\\TU_USUARIO\\.local\\bin\\organiza.exe run" /F
 ```
 
 ## Alcance actual
@@ -133,7 +155,7 @@ El movimiento utiliza `rename`, que es atómico dentro del mismo volumen. Si el 
 
 ## Development tooling
 
-Contributor setup for local quality gates, agent-instruction sync, and CI. No Cargo or npm dependency is added to this Rust-only package.
+Contributor setup for local quality gates, agent-instruction sync, and CI. The core package is Rust-only; the npm wrapper (`npm/organiza`) is a thin TypeScript launcher that ships the per-platform binaries as optional dependencies.
 
 ### Required tools (exact versions)
 
@@ -183,13 +205,47 @@ Tool versions are pinned in this repository (see the table above; `rust-toolchai
 
 AgentSync uses symbolic links. On Windows, creating symlinks requires Developer Mode or elevated privileges (see [Microsoft: enable your device for development](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development)). CI does not require symlink creation on Windows; contributors should run `agentsync status --json` after `apply` to confirm the sync worked.
 
+### Release pipeline (.github/workflows/release.yml)
+
+Every third-party action is pinned to a full commit SHA with a version comment; external tools (cross, Node/npm, Docker buildx/QEMU) are pinned to exact versions. Nothing publishes until every preceding job passes.
+
+Jobs, in order:
+
+1. `release-please` — opens/updates the release PR (release-type rust, component `organiza`), bumps `Cargo.toml` and the npm wrapper versions, and creates the GitHub Release with the `organiza-<version>-<target>` binaries + `.sha256` assets.
+2. `build-binaries` (8 targets) — linux x86_64/aarch64 (gnu + musl, cross-compiled with `cross`), darwin x86_64/aarch64, windows x86_64/aarch64. Uploads archives as workflow artifacts.
+3. `upload-assets` — attaches the archives to the GitHub Release.
+4. `publish-npm-binaries` (6 platform packages `@dallay/organiza-<os>-<arch>`) — gated on release-please result success; publishes with `--provenance`.
+5. `publish-npm-base` — publishes `@dallay/organiza` (wrapper), gated on the six platform packages succeeding.
+6. `publish-crates` — `cargo publish --locked` for the `organiza` crate.
+7. `publish-docker` — multi-arch image (`linux/amd64`, `linux/arm64`) to Docker Hub `yacosta738/organiza` and GHCR `ghcr.io/dallay/organiza`, tagged `semver` + `latest`.
+8. `release-summary` — aggregates the results of every publish job.
+
+Secrets required (repo/organization secrets, or the configured environment):
+
+| Secret | Used by |
+|--------|---------|
+| `GH_APP_ID`, `GH_APP_PRIVATE_KEY` | `release-please` (create-github-app-token) |
+| `NPM_TOKEN` | `publish-npm-*` |
+| `CARGO_REGISTRY_TOKEN` | `publish-crates` |
+| `DOCKERHUB_TOKEN` (with `DOCKERHUB_USERNAME`) | `publish-docker` |
+| `GHCR_TOKEN` | `publish-docker` (GHCR) |
+
+`workflow_dispatch` with `dry_run: true` runs the pipeline end-to-end without publishing or attaching assets.
+
+**Release rollback.** If a release is published with an error:
+
+1. npm: `npm unpublish @dallay/organiza@<version> --force` within 72 hours of publish (and the corresponding `@dallay/organiza-<os>-<arch>` packages).
+2. crates.io: `cargo yank --version <version>` (crates.io does not allow deletion).
+3. Docker: re-tag the previous good image as `latest` and, if needed, remove the bad semver tag from both registries.
+4. GitHub: delete the Release (and its assets) for the bad tag.
+
 ### Rollback
 
 To remove the tooling:
 
-1. Delete `.github/workflows/ci.yml`, `lefthook.yml`, `rust-toolchain.toml`, and `.agents/`.
+1. Delete `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `lefthook.yml`, `rust-toolchain.toml`, `release-please-config.json`, `.release-please-manifest.json`, `Dockerfile`, `.dockerignore`, `npm/`, `scripts/`, and `.agents/`.
 2. Run `lefthook uninstall` to remove the registered git hooks.
-3. Remove the `# START AI Agent Symlinks` / `# END AI Agent Symlinks` block from `.gitignore` (keep `target/` and `.DS_Store` if desired).
+3. Remove the `# START AI Agent Symlinks` / `# END AI Agent Symlinks` block from `.gitignore` (keep `target/`, `.DS_Store`, and the npm ignores if desired).
 4. Restore the reviewed root `AGENTS.md` from version control: its content is committed in `.agents/AGENTS.md`, so `git show HEAD:.agents/AGENTS.md > AGENTS.md` (after step 1) restores the file.
 
 No application code or Cargo dependency rollback is required.

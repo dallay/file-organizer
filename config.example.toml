@@ -1,6 +1,6 @@
 # Copia este archivo a:
-# macOS/Linux: ~/.config/file-organizer/config.toml
-# Windows: %APPDATA%\\file-organizer\\config.toml
+# macOS/Linux: ~/.config/organiza/config.toml
+# Windows: %APPDATA%\\organiza\\config.toml
 
 source_directories = ["~/Downloads", "~/Desktop/Por ordenar"]
 recursive = false

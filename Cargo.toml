@@ -1,9 +1,28 @@
 [package]
-name = "file-organizer"
+name = "organiza"
 version = "0.1.0"
 edition = "2021"
 description = "Cross-platform configurable file organizer"
 license = "MIT"
+repository = "https://github.com/dallay/file-organizer"
+readme = "README.md"
+keywords = ["files", "organizer", "cli", "organization", "cleanup"]
+categories = ["command-line-utilities", "filesystem"]
+authors = ["Yuniel Acosta <yunielacosta738@gmail.com>"]
+exclude = [
+    ".agents",
+    ".github",
+    "npm",
+    "openspec",
+    "platform",
+    "scripts",
+    ".dockerignore",
+    ".gitignore",
+    ".release-please-manifest.json",
+    "Dockerfile",
+    "config.example.toml",
+    "release-please-config.json",
+]
 
 [dependencies]
 anyhow = "1"
@@ -14,3 +33,9 @@ walkdir = "2"
 
 [dev-dependencies]
 tempfile = "3"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+opt-level = 3

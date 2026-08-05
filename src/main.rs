@@ -1,11 +1,11 @@
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
-use file_organizer::{default_config_path, load_config, resolve_config, run, RunOptions};
+use organiza::{default_config_path, load_config, resolve_config, run, RunOptions};
 use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "file-organizer",
+    name = "organiza",
     version,
     about = "Organiza archivos por tipo en varias plataformas"
 )]
@@ -55,7 +55,7 @@ fn main() -> Result<()> {
     match cli.command {
         Command::ValidateConfig => {
             let config = match (cli.config.is_some(), config_path.exists()) {
-                (false, false) => file_organizer::Config::default(),
+                (false, false) => organiza::Config::default(),
                 _ => load_config(&config_path)
                     .with_context(|| format!("no se pudo validar {}", config_path.display()))?,
             };
@@ -82,4 +82,17 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+
+    /// The CLI must expose itself as `organiza` so `--help`/`--version` and
+    /// completion metadata match the rebranded crate (RDP-1).
+    #[test]
+    fn cli_name_is_organiza() {
+        assert_eq!(Cli::command().get_name(), "organiza");
+    }
 }

@@ -24,7 +24,7 @@ No skills, commands, MCP, or per-agent config directories are managed by AgentSy
 - Run one exact unit test with `cargo test tests::<test_name> -- --exact` (example: `cargo test tests::classifies_extensions_case_insensitively -- --exact`). Tests currently live inline in `src/lib.rs` and use `tempfile`.
 - Before finishing a Rust change, run the local gate from cheap to broad: `cargo fmt -- --check`, `cargo clippy --all-targets --all-features -- -D warnings`, then `cargo test`.
 - Add or change a failing regression/unit test before production code. There is no repository CI, coverage setup, or custom rustfmt/Clippy configuration to replace the local gate.
-- Use `cargo build --release` only when validating packaging or platform launchers; the artifact is `target/release/file-organizer` (`.exe` on Windows).
+- Use `cargo build --release` only when validating packaging or platform launchers; the artifact is `target/release/organiza` (`.exe` on Windows).
 
 ## Safe CLI checks
 
@@ -34,8 +34,8 @@ No skills, commands, MCP, or per-agent config directories are managed by AgentSy
 
 ## Behavior that is easy to break
 
-- Config lookup is `FILE_ORGANIZER_CONFIG` first, then `%APPDATA%/file-organizer/config.toml` on Windows or `$XDG_CONFIG_HOME/file-organizer/config.toml` (falling back to `~/.config`) elsewhere.
+- Config lookup is `ORGANIZA_CONFIG` first, then `%APPDATA%/organiza/config.toml` on Windows or `$XDG_CONFIG_HOME/organiza/config.toml` (falling back to `~/.config`) elsewhere.
 - Extension overrides are case-insensitive and replace built-in mappings. Generated category directories are excluded from recursive scans so organized files are not reprocessed.
-- Non-dry runs acquire a directory lock (`~/.cache/file-organizer.lock` on Unix-like systems; `LOCALAPPDATA/file-organizer.lock` on Windows). A concurrent run must fail rather than proceed.
+- Non-dry runs acquire a directory lock (`~/.cache/organiza.lock` on Unix-like systems; `LOCALAPPDATA/organiza.lock` on Windows). A concurrent run must fail rather than proceed.
 - Moves intentionally use `rename`: they are atomic on one volume, and cross-volume moves return an error instead of falling back to copy/delete.
 - Scheduler changes must preserve the installed-binary/default-config assumptions in `platform/` and stay consistent with the platform instructions in `README.md`.
