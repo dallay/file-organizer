@@ -95,9 +95,13 @@ pub(crate) fn default_categories() -> HashMap<&'static str, &'static str> {
     entries.iter().copied().collect()
 }
 
-/// Classify `path`. Returns `DEFAULT_CATEGORY` for unknown extension AND
-/// no-extension files.
-pub(crate) fn category_for(path: &Path, config: &Config) -> String {
+/// Classify `path` against an already-composed map. Returns
+/// `DEFAULT_CATEGORY` for unknown extension AND no-extension files.
+///
+/// Prefer this in hot loops: compose the map once via [`apply_categories`]
+/// and reuse it, instead of calling [`category_for`] per path (which
+/// recomposes the map on every call).
+pub(crate) fn classify(path: &Path, composed: &HashMap<String, String>) -> String {
     let Some(filename) = path.file_name().and_then(|name| name.to_str()) else {
         return DEFAULT_CATEGORY.to_string();
     };
@@ -107,11 +111,18 @@ pub(crate) fn category_for(path: &Path, config: &Config) -> String {
     if extension.is_empty() {
         return DEFAULT_CATEGORY.to_string();
     }
-    let composed = apply_categories(config);
     composed
         .get(&extension.to_ascii_lowercase())
         .cloned()
         .unwrap_or_else(|| DEFAULT_CATEGORY.to_string())
+}
+
+/// Classify `path`, composing the resolution map on the fly. Convenience
+/// helper used by tests; production hot paths compose the map once via
+/// [`apply_categories`] and call [`classify`] directly.
+#[cfg(test)]
+pub(crate) fn category_for(path: &Path, config: &Config) -> String {
+    classify(path, &apply_categories(config))
 }
 
 /// One-shot composition of the resolution map. Resolution order:
@@ -408,5 +419,32 @@ mod tests {
             root,
             &config
         ));
+    }
+
+    #[test]
+    fn classify_with_precomposed_map_matches_category_for() {
+        let mut config = Config::default();
+        config.categories.push(CategoryRule {
+            name: "Design".to_string(),
+            extensions: vec!["psd".to_string(), "ai".to_string()],
+            replace: false,
+        });
+        config
+            .extensions
+            .insert("md".to_string(), "Docs".to_string());
+
+        let map = apply_categories(&config);
+        assert_eq!(classify(Path::new("PHOTO.JPG"), &map), "Image");
+        assert_eq!(classify(Path::new("photo.jpg"), &map), "Image");
+        assert_eq!(classify(Path::new("resume.PDF"), &map), "Text");
+        assert_eq!(classify(Path::new("design.psd"), &map), "Design");
+        assert_eq!(classify(Path::new("notes.md"), &map), "Docs");
+        assert_eq!(classify(Path::new("README"), &map), "Other");
+        assert_eq!(classify(Path::new("data.custom"), &map), "Other");
+        // Same observable results as the one-shot convenience wrapper.
+        assert_eq!(
+            classify(Path::new("design.psd"), &map),
+            category_for(Path::new("design.psd"), &config)
+        );
     }
 }

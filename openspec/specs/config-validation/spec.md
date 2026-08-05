@@ -57,7 +57,7 @@ The system MUST reject any configuration that declares two
 `[[categories]]` entries with the same `name`, whether or not
 `replace` is set. Validation failure MUST occur before the first move.
 
-#### Scenario: Duplicate name in [[categories]] is rejected
+#### Scenario: Duplicate name in [[categories]] is rejected (test_27)
 
 - GIVEN two `[[categories]]` rules with the same `name = "Text"`
 - WHEN `load_config` parses the config
