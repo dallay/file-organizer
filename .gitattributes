@@ -1,0 +1,5 @@
+# Force LF line endings for files read by tests so assertions on
+# multi-line snippets are platform-independent (Windows checkouts
+# would otherwise convert them to CRLF).
+README.md text eol=lf
+platform/macos/*.plist.example text eol=lf

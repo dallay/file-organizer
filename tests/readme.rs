@@ -16,7 +16,9 @@ fn repo_root() -> &'static Path {
 
 fn readme() -> String {
     let path = repo_root().join("README.md");
-    fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()))
+    fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()))
+        .replace("\r\n", "\n")
 }
 
 /// Headings that the translation introduced.
