@@ -65,7 +65,7 @@ pub struct RunOptions {
 }
 
 pub fn default_config_path() -> PathBuf {
-    if let Some(path) = env::var_os("FILE_ORGANIZER_CONFIG") {
+    if let Some(path) = env::var_os("ORGANIZA_CONFIG") {
         return PathBuf::from(path);
     }
 
@@ -73,13 +73,13 @@ pub fn default_config_path() -> PathBuf {
         env::var_os("APPDATA")
             .map(PathBuf::from)
             .unwrap_or_else(|| home_directory().join("AppData").join("Roaming"))
-            .join("file-organizer")
+            .join("organiza")
             .join("config.toml")
     } else {
         env::var_os("XDG_CONFIG_HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|| home_directory().join(".config"))
-            .join("file-organizer")
+            .join("organiza")
             .join("config.toml")
     }
 }
@@ -104,7 +104,7 @@ pub fn load_config(path: &Path) -> Result<Config> {
 /// Precedence (locked in `intent.md`):
 /// 1. CLI positional directories (always win).
 /// 2. Configured `source_directories` (loaded from TOML).
-/// 3. `FILE_ORGANIZER_DOWNLOADS` env var (via `default_downloads_path`).
+/// 3. `ORGANIZA_DOWNLOADS` env var (via `default_downloads_path`).
 /// 4. Platform auto-detect (via `default_downloads_path`).
 ///
 /// First-run behavior: when the default config path does not exist AND no
@@ -494,22 +494,22 @@ fn default_lock_path() -> PathBuf {
         env::var_os("LOCALAPPDATA")
             .map(PathBuf::from)
             .unwrap_or_else(|| home_directory().join("AppData").join("Local"))
-            .join("file-organizer.lock")
+            .join("organiza.lock")
     } else {
-        home_directory().join(".cache").join("file-organizer.lock")
+        home_directory().join(".cache").join("organiza.lock")
     }
 }
 
 /// Resolve the Downloads directory used when neither CLI positional
 /// directories nor `source_directories` are present. Order:
-/// `FILE_ORGANIZER_DOWNLOADS` → Linux `XDG_DOWNLOAD_DIR` → macOS
+/// `ORGANIZA_DOWNLOADS` → Linux `XDG_DOWNLOAD_DIR` → macOS
 /// `<home>/Downloads` → Windows `%USERPROFILE%/Downloads` with localized
 /// fallbacks.
 ///
 /// `home_override` lets tests inject a synthetic HOME without touching the
 /// process environment. Production callers pass `None`.
 pub fn default_downloads_path(home_override: Option<&Path>) -> Option<PathBuf> {
-    if let Some(value) = env::var_os("FILE_ORGANIZER_DOWNLOADS") {
+    if let Some(value) = env::var_os("ORGANIZA_DOWNLOADS") {
         let raw = PathBuf::from(value);
         let expanded = expand_home(&raw);
         if expanded.is_dir() {
@@ -680,12 +680,12 @@ mod tests {
     }
 
     /// Tests that call `run` with a non-dry-run acquire the real directory
-    /// lock at `~/.cache/file-organizer.lock`. Running them in parallel
+    /// lock at `~/.cache/organiza.lock`. Running them in parallel
     /// against the same lock would race. This mutex serializes them so the
     /// lock contention is deterministic instead of flaky.
     static RUN_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-    /// Tests that mutate `FILE_ORGANIZER_DOWNLOADS` / `USERPROFILE` env vars
+    /// Tests that mutate `ORGANIZA_DOWNLOADS` / `USERPROFILE` env vars
     /// race with each other under parallel execution. This mutex serializes
     /// them so the assertions see the env state they set.
     static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -704,6 +704,32 @@ mod tests {
         assert_eq!(category_for(Path::new("Song.MP3"), &config), "Audio");
         assert_eq!(category_for(Path::new("README"), &config), "Other");
         assert_eq!(category_for(Path::new("data.custom"), &config), "Other");
+    }
+
+    /// The crate must be published as `organiza` (RDP-1 rebrand); the binary
+    /// name and every distribution artifact derive from this package name.
+    #[test]
+    fn package_is_named_organiza() {
+        assert_eq!(env!("CARGO_PKG_NAME"), "organiza");
+        assert_eq!(env!("CARGO_PKG_VERSION"), "0.1.0");
+    }
+
+    /// The default config path must live under the rebranded `organiza`
+    /// directory, never the legacy `file-organizer` one (RDP-1).
+    #[test]
+    fn default_config_path_uses_organiza_directory() {
+        let path = default_config_path();
+        let rendered = path.to_string_lossy();
+        assert!(
+            rendered.ends_with("organiza/config.toml"),
+            "default config path must live under organiza/, got: {}",
+            rendered
+        );
+        assert!(
+            !rendered.contains("file-organizer"),
+            "default config path must not reference file-organizer, got: {}",
+            rendered
+        );
     }
 
     #[test]
@@ -1026,11 +1052,11 @@ mod tests {
         // SAFETY: test-only env mutation guarded by ENV_LOCK; values restored
         // after the assertion.
         unsafe {
-            env::set_var("FILE_ORGANIZER_DOWNLOADS", &custom);
+            env::set_var("ORGANIZA_DOWNLOADS", &custom);
         }
         let result = default_downloads_path(Some(temporary.path()));
         unsafe {
-            env::remove_var("FILE_ORGANIZER_DOWNLOADS");
+            env::remove_var("ORGANIZA_DOWNLOADS");
         }
         assert_eq!(result.as_deref(), Some(custom.as_path()));
     }
@@ -1047,7 +1073,7 @@ mod tests {
         let downloads = temporary.path().join("Downloads");
         fs::create_dir(&downloads).unwrap();
         unsafe {
-            env::remove_var("FILE_ORGANIZER_DOWNLOADS");
+            env::remove_var("ORGANIZA_DOWNLOADS");
         }
         let result = default_downloads_path(Some(temporary.path()));
         assert_eq!(result.as_deref(), Some(downloads.as_path()));
@@ -1067,7 +1093,7 @@ mod tests {
         let downloads = temporary.path().join("Downloads");
         fs::create_dir(&downloads).unwrap();
         unsafe {
-            env::remove_var("FILE_ORGANIZER_DOWNLOADS");
+            env::remove_var("ORGANIZA_DOWNLOADS");
         }
         let result = default_downloads_path(Some(temporary.path()));
         assert_eq!(result.as_deref(), Some(downloads.as_path()));
@@ -1084,7 +1110,7 @@ mod tests {
         fs::create_dir(&localized).unwrap();
         unsafe {
             env::set_var("USERPROFILE", temporary.path());
-            env::remove_var("FILE_ORGANIZER_DOWNLOADS");
+            env::remove_var("ORGANIZA_DOWNLOADS");
         }
         let result = default_downloads_path(None);
         unsafe {
@@ -1102,7 +1128,7 @@ mod tests {
         fs::create_dir(&localized).unwrap();
         unsafe {
             env::set_var("USERPROFILE", temporary.path());
-            env::remove_var("FILE_ORGANIZER_DOWNLOADS");
+            env::remove_var("ORGANIZA_DOWNLOADS");
         }
         let result = default_downloads_path(None);
         unsafe {
@@ -1119,13 +1145,13 @@ mod tests {
         fs::create_dir(&downloads).unwrap();
         // Point default_config_path at a nonexistent path via env.
         unsafe {
-            env::set_var("FILE_ORGANIZER_CONFIG", temp.path().join("absent.toml"));
-            env::set_var("FILE_ORGANIZER_DOWNLOADS", &downloads);
+            env::set_var("ORGANIZA_CONFIG", temp.path().join("absent.toml"));
+            env::set_var("ORGANIZA_DOWNLOADS", &downloads);
         }
         let config = resolve_config(None, &[]).unwrap();
         unsafe {
-            env::remove_var("FILE_ORGANIZER_CONFIG");
-            env::remove_var("FILE_ORGANIZER_DOWNLOADS");
+            env::remove_var("ORGANIZA_CONFIG");
+            env::remove_var("ORGANIZA_DOWNLOADS");
         }
         assert_eq!(config.source_directories, vec![downloads]);
     }
@@ -1152,11 +1178,11 @@ mod tests {
         let env_downloads = temp.path().join("env-dl");
         fs::create_dir(&env_downloads).unwrap();
         unsafe {
-            env::set_var("FILE_ORGANIZER_DOWNLOADS", &env_downloads);
+            env::set_var("ORGANIZA_DOWNLOADS", &env_downloads);
         }
         let config = resolve_config(Some(&config_path), &[]).unwrap();
         unsafe {
-            env::remove_var("FILE_ORGANIZER_DOWNLOADS");
+            env::remove_var("ORGANIZA_DOWNLOADS");
         }
         assert_eq!(config.source_directories, vec![PathBuf::from("/srv/inbox")]);
     }
@@ -1170,12 +1196,12 @@ mod tests {
         let env_downloads = temp.path().join("env-dl");
         fs::create_dir(&env_downloads).unwrap();
         unsafe {
-            env::set_var("FILE_ORGANIZER_DOWNLOADS", &env_downloads);
+            env::set_var("ORGANIZA_DOWNLOADS", &env_downloads);
         }
         let positional = vec![PathBuf::from("/cli/arg")];
         let config = resolve_config(Some(&config_path), &positional).unwrap();
         unsafe {
-            env::remove_var("FILE_ORGANIZER_DOWNLOADS");
+            env::remove_var("ORGANIZA_DOWNLOADS");
         }
         assert_eq!(config.source_directories, vec![PathBuf::from("/cli/arg")]);
     }
