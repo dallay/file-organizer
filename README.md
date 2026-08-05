@@ -31,6 +31,8 @@ cargo build --release
 
 El binario queda en `target/release/organiza` (`organiza.exe` en Windows).
 
+> Las instrucciones de **Configurar**, **Instalar como servicio** y los launchers de `platform/` asumen un *source checkout* (build local desde el repositorio). Los usuarios que instalen via `cargo install organiza` o el wrapper npm `@dallay/organiza` pueden descargar `config.example.toml` y los launchers directamente desde [el repositorio en GitHub](https://github.com/dallay/file-organizer).
+
 ## Configurar
 
 ```bash
