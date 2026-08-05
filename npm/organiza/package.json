@@ -1,0 +1,56 @@
+{
+	"name": "@dallay/organiza",
+	"version": "0.1.0",
+	"description": "A fast cross-platform file organizer CLI that sorts files by type into category folders.",
+	"author": "Yuniel Acosta <yunielacosta738@gmail.com>",
+	"license": "MIT",
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/dallay/file-organizer.git"
+	},
+	"homepage": "https://github.com/dallay/file-organizer#readme",
+	"bugs": {
+		"url": "https://github.com/dallay/file-organizer/issues"
+	},
+	"keywords": [
+		"organiza",
+		"file",
+		"organizer",
+		"files",
+		"cleanup",
+		"cli",
+		"automation"
+	],
+	"bin": {
+		"organiza": "lib/index.js"
+	},
+	"main": "lib/index.js",
+	"files": [
+		"lib"
+	],
+	"scripts": {
+		"test": "npm run typecheck",
+		"typecheck": "tsc --noEmit",
+		"build": "tsc",
+		"clean": "node -e \"require('fs').rmSync('lib', {recursive: true, force: true})\"",
+		"prepublishOnly": "npm run build"
+	},
+	"devDependencies": {
+		"@types/node": "^25.5.0",
+		"typescript": "^7.0.0"
+	},
+	"optionalDependencies": {
+		"@dallay/organiza-darwin-arm64": "file:../../../../../../var/folders/zz/d4kl1hfj1j15nxm43d24px300000gn/T/tmp.XsZYeE5nam/dallay-organiza-darwin-arm64-0.1.0.tgz",
+		"@dallay/organiza-darwin-x64": "0.1.0",
+		"@dallay/organiza-linux-arm64": "0.1.0",
+		"@dallay/organiza-linux-x64": "0.1.0",
+		"@dallay/organiza-windows-arm64": "0.1.0",
+		"@dallay/organiza-windows-x64": "0.1.0"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}
