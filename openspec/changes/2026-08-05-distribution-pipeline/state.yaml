@@ -1,5 +1,6 @@
 change: 2026-08-05-distribution-pipeline
-current_phase: tasks complete
-completed: [explore, propose, spec, design, tasks]
-next: apply (github-stacked-prs chain: PR1 base=main -> PR2 base=PR1 branch)
+current_phase: apply
+completed: [explore, propose, spec, design, tasks, apply]
+next: verify
+stack: github-stacked-prs (PR1 base=main on feat/organiza-rebrand, committed; PR2 base=PR1 branch on feat/organiza-distribution, committed; neither pushed yet)
 updated: 2026-08-05
