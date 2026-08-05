@@ -31,8 +31,8 @@
 	},
 	"packageRules": [
 		{
-			"description": "release-please owns the @dallay platform packages; Renovate must never touch them",
-			"matchPackageNames": ["@dallay/{/,}**"],
+			"description": "release-please owns @dallay/organiza packages; Renovate must never touch them",
+			"matchPackageNames": ["@dallay/organiza", "@dallay/organiza-*"],
 			"enabled": false
 		},
 		{
