@@ -1,4 +1,4 @@
-# organiza en Rust
+# O R G A N I Z A
 
 Motor multiplataforma para macOS, Linux y Windows. La lógica de clasificación vive en un binario Rust; los schedulers de cada sistema operativo solo lo ejecutan.
 
