@@ -45,28 +45,28 @@ Chain strategy: github-stacked-prs (resolved by user: PR1 base=main, PR2 base=PR
 
 ## Phase 4: Infrastructure — npm wrapper (PR2)
 
-- [ ] 4.1 `npm/package.json.tmpl`: envsubst template (node_pkg/version/os/arch/bin), os+cpu fields, publishConfig public, bin.organiza. RDP-4.
-- [ ] 4.2 `npm/organiza/package.json`: base wrapper, bin→lib/index.js, 6 exact optionalDeps `@dallay/organiza-*@0.1.0`, engines node>=18. RDP-3/4.
-- [ ] 4.3 `npm/organiza/tsconfig.json`: compile src/index.ts → lib/index.js. RDP-3.
-- [ ] 4.4 `npm/organiza/src/index.ts`: PLATFORMS map (8 keys incl. cygwin), require.resolve + spawnSync, unsupported-platform error, reinstall message. RDP-3 scenarios.
-- [ ] 4.5 `npm/organiza/scripts/{sync-optional-deps,update-versions}.js`. RDP-2/4.
+- [x] 4.1 `npm/package.json.tmpl`: envsubst template (node_pkg/version/os/arch/bin), os+cpu fields, publishConfig public, bin.organiza. RDP-4.
+- [x] 4.2 `npm/organiza/package.json`: base wrapper, bin→lib/index.js, 6 exact optionalDeps `@dallay/organiza-*@0.1.0`, engines node>=18. RDP-3/4.
+- [x] 4.3 `npm/organiza/tsconfig.json`: compile src/index.ts → lib/index.js. RDP-3.
+- [x] 4.4 `npm/organiza/src/index.ts`: PLATFORMS map (8 keys incl. cygwin), require.resolve + spawnSync, unsupported-platform error, reinstall message. RDP-3 scenarios.
+- [x] 4.5 `npm/organiza/scripts/{sync-optional-deps,update-versions}.js`. RDP-2/4.
 
 ## Phase 5: Implementation — release automation (PR2)
 
-- [ ] 5.1 `release-please-config.json` (release-type rust, component organiza, extra-files jsonpaths: wrapper $.version + 6 optionalDeps, changelog sections) + `.release-please-manifest.json` `{ ".": "0.1.0" }`. RDP-2 Version sync.
-- [ ] 5.2 `.github/workflows/release.yml`: 8 jobs (release-please→build-binaries 8-target matrix→upload-assets, publish-npm-binaries 6 configs w/ envsubst+guards, publish-npm-base gated on result success, publish-crates, publish-docker, release-summary); permissions + id-token; concurrency; dry_run dispatch; actions full-SHA+comment; explicit tool versions. RDP-2/5/6/7/8; CD-4; CQV pinning+gated-publish.
-- [ ] 5.3 `Dockerfile`: rust:1-alpine builder (musl-dev, dummy src cache, `--locked`, strip) → alpine:3.23 runtime (tini, uid 1000, OCI labels, ENTRYPOINT tini -- organiza). CD-2/3.
-- [ ] 5.4 `.dockerignore`: target/, .git, npm/, openspec/, .github/, node_modules/. CD-4.
+- [x] 5.1 `release-please-config.json` (release-type rust, component organiza, extra-files jsonpaths: wrapper $.version + 6 optionalDeps, changelog sections) + `.release-please-manifest.json` `{ ".": "0.1.0" }`. RDP-2 Version sync.
+- [x] 5.2 `.github/workflows/release.yml`: 8 jobs (release-please→build-binaries 8-target matrix→upload-assets, publish-npm-binaries 6 configs w/ envsubst+guards, publish-npm-base gated on result success, publish-crates, publish-docker, release-summary); permissions + id-token; concurrency; dry_run dispatch; actions full-SHA+comment; explicit tool versions. RDP-2/5/6/7/8; CD-4; CQV pinning+gated-publish.
+- [x] 5.3 `Dockerfile`: rust:1-alpine builder (musl-dev, dummy src cache, `--locked`, strip) → alpine:3.23 runtime (tini, uid 1000, OCI labels, ENTRYPOINT tini -- organiza). CD-2/3.
+- [x] 5.4 `.dockerignore`: target/, .git, npm/, openspec/, .github/, node_modules/. CD-4.
 
 ## Phase 6: Implementation — config context (PR2)
 
-- [ ] 6.1 `openspec/config.yaml` context: npm wrapper + TS in stack; testing gate adds `tsc --noEmit` for wrapper. CQV.
+- [x] 6.1 `openspec/config.yaml` context: npm wrapper + TS in stack; testing gate adds `tsc --noEmit` for wrapper. CQV.
 
 ## Phase 7: Testing — PR2 gate
 
-- [ ] 7.1 `tsc --noEmit` in npm/organiza; `npm pack --dry-run` template + `tar -tzvf` executable-bit check. RDP-3/4; risk #9.
-- [ ] 7.2 `cargo build --release` produces `organiza`; `docker build --platform linux/amd64` smoke. RDP-1; CD-2.
-- [ ] 7.3 actionlint (if available) on release.yml; grep-audit: no floating action tags. CQV Unpinned-action.
+- [x] 7.1 `tsc --noEmit` in npm/organiza; `npm pack --dry-run` template + `tar -tzvf` executable-bit check. RDP-3/4; risk #9.
+- [x] 7.2 `cargo build --release` produces `organiza`; `docker build --platform linux/amd64` smoke. RDP-1; CD-2.
+- [x] 7.3 actionlint (if available) on release.yml; grep-audit: no floating action tags. CQV Unpinned-action.
 
 ## Phase 8: Verification — spec scenarios (sdd-verify)
 
