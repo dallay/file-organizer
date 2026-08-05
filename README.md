@@ -141,7 +141,7 @@ Contributor setup for local quality gates, agent-instruction sync, and CI. No Ca
 |------|---------|---------|
 | Rust (stable) | pinned by `rust-toolchain.toml` (components: `rustfmt`, `clippy`) | [rustup.rs](https://rustup.rs) |
 | Node.js | >= 18 (CI uses 22 LTS; local 24 works) | [nodejs.org](https://nodejs.org) or fnm/nvm |
-| Lefthook | 2.1.10 | `brew install lefthook` (macOS) or see [lefthook docs](https://github.com/evilmartians/lefthook#install) |
+| Lefthook | 2.1.10 | macOS/Linux: `brew install lefthook`; Windows: `winget` or `scoop`; Linux distros: Debian/RPM/Alpine/Arch packages — see [lefthook docs](https://github.com/evilmartians/lefthook#install) for the exact package name per system |
 | AgentSync | 1.45.2 (`@dallay/agentsync` on npm) | invoked via `npx`, no global install needed |
 
 ### One-time setup
