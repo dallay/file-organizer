@@ -10,10 +10,12 @@ use walkdir::{DirEntry, WalkDir};
 
 mod categories;
 
+#[cfg(test)]
+pub(crate) use categories::category_for;
 pub use categories::CategoryRule;
 pub(crate) use categories::{
-    category_for, is_generated_category, is_unsafe_category_name, validate_categories,
-    DEFAULT_CATEGORY,
+    apply_categories, classify, is_generated_category, is_unsafe_category_name,
+    validate_categories, DEFAULT_CATEGORY,
 };
 
 #[derive(Debug, Clone, Copy, Default, Deserialize)]
@@ -170,6 +172,10 @@ pub fn run(config: &Config, options: RunOptions) -> Result<()> {
         skip_paths.insert(log.clone());
     }
 
+    // Compose the extension→category map once per run: `move_file` classifies
+    // every source path, and recomposing the map per file is pure waste.
+    let composed = apply_categories(config);
+
     for configured_root in &config.source_directories {
         let root = expand_home(configured_root);
         if !root.is_dir() {
@@ -202,7 +208,7 @@ pub fn run(config: &Config, options: RunOptions) -> Result<()> {
                 continue;
             }
 
-            if let Err(error) = move_file(&source, &root, config, options, &mut logger) {
+            if let Err(error) = move_file(&source, &root, &composed, options, &mut logger) {
                 logger.line(format!("ERROR: {}", error))?;
                 failures += 1;
             }
@@ -330,11 +336,11 @@ fn is_recent(path: &Path, min_age_seconds: u64) -> bool {
 fn move_file(
     source: &Path,
     root: &Path,
-    config: &Config,
+    composed: &HashMap<String, String>,
     options: RunOptions,
     logger: &mut Logger,
 ) -> Result<()> {
-    let category = category_for(source, config);
+    let category = classify(source, composed);
     let destination_directory = root.join(&category);
     let requested_destination =
         destination_directory.join(source.file_name().context("archivo sin nombre")?);
@@ -693,6 +699,9 @@ mod tests {
     fn classifies_extensions_case_insensitively() {
         let config = Config::default();
         assert_eq!(category_for(Path::new("PHOTO.JPG"), &config), "Image");
+        assert_eq!(category_for(Path::new("README.TXT"), &config), "Text");
+        assert_eq!(category_for(Path::new("Resume.PDF"), &config), "Text");
+        assert_eq!(category_for(Path::new("Song.MP3"), &config), "Audio");
         assert_eq!(category_for(Path::new("README"), &config), "Other");
         assert_eq!(category_for(Path::new("data.custom"), &config), "Other");
     }

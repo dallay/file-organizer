@@ -83,7 +83,7 @@ its path lies under one of the resolved source roots. The check MUST
 compare canonicalized paths so symlinked Downloads roots resolve
 correctly.
 
-#### Scenario: Log file inside Downloads is excluded from classification
+#### Scenario: Log file inside Downloads is excluded from classification (test_28)
 
 - GIVEN `log_file = "<root>/log.txt"` and
   `source_directories = ["<root>"]`
