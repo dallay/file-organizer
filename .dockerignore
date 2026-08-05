@@ -1,0 +1,32 @@
+# Patterns without leading '/' match at any depth (choosing depth-agnostic)
+# Rust typical
+target/
+debug/
+*.rs.bk
+*.rlib
+*.prof*
+.idea/
+# Node/JS/TS
+node_modules/
+dist/
+build/
+# Distribution artifacts (never copied into the image build context)
+npm/
+openspec/
+# General
+*.log
+.env*
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+# Prevent copying of git and CI files
+.git/
+.github/
+.gitignore
+.gitattributes
+.gitmodules
+# For Docker cache efficiency
+**/tmp/
+coverage/
