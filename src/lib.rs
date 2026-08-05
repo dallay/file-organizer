@@ -726,9 +726,32 @@ mod tests {
     /// suffix check like `ends_with("organiza/config.toml")` fails even
     /// though the path is correct. `file_name()`/`parent()` are
     /// separator-agnostic and work on every platform.
+    ///
+    /// We also hold `ENV_LOCK` and clear `ORGANIZA_CONFIG` for the duration
+    /// of the call: `default_config_path()` checks `ORGANIZA_CONFIG` first
+    /// and returns it verbatim if present. The test
+    /// `missing_default_config_uses_config_default_and_autodetect` sets that
+    /// variable under the same lock; without our own guard a parallel test
+    /// runner could observe that temporary value and the assertions below
+    /// would race-fail.
     #[test]
     fn default_config_path_uses_organiza_directory() {
+        let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+        // SAFETY: test-only env mutation guarded by ENV_LOCK; value restored
+        // before the guard is released.
+        let previous = env::var_os("ORGANIZA_CONFIG");
+        unsafe {
+            env::remove_var("ORGANIZA_CONFIG");
+        }
         let path = default_config_path();
+        match previous {
+            Some(value) => unsafe {
+                env::set_var("ORGANIZA_CONFIG", value);
+            },
+            None => unsafe {
+                env::remove_var("ORGANIZA_CONFIG");
+            },
+        }
         assert_eq!(
             path.file_name().and_then(|name| name.to_str()),
             Some("config.toml"),
