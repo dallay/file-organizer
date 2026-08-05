@@ -716,19 +716,33 @@ mod tests {
 
     /// The default config path must live under the rebranded `organiza`
     /// directory, never the legacy `file-organizer` one (RDP-1).
+    ///
+    /// Compare path *components* instead of rendering to a string with a
+    /// hardcoded `/` separator: on Windows the path uses `\`, so a string
+    /// suffix check like `ends_with("organiza/config.toml")` fails even
+    /// though the path is correct. `file_name()`/`parent()` are
+    /// separator-agnostic and work on every platform.
     #[test]
     fn default_config_path_uses_organiza_directory() {
         let path = default_config_path();
-        let rendered = path.to_string_lossy();
-        assert!(
-            rendered.ends_with("organiza/config.toml"),
+        assert_eq!(
+            path.file_name().and_then(|name| name.to_str()),
+            Some("config.toml"),
+            "default config path must be config.toml, got: {}",
+            path.display()
+        );
+        assert_eq!(
+            path.parent()
+                .and_then(|parent| parent.file_name())
+                .and_then(|name| name.to_str()),
+            Some("organiza"),
             "default config path must live under organiza/, got: {}",
-            rendered
+            path.display()
         );
         assert!(
-            !rendered.contains("file-organizer"),
+            !path.to_string_lossy().contains("file-organizer"),
             "default config path must not reference file-organizer, got: {}",
-            rendered
+            path.display()
         );
     }
 
