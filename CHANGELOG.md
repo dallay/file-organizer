@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.1](https://github.com/dallay/file-organizer/compare/v0.2.0...v0.2.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* apply CodeRabbit auto-fixes ([ce7b530](https://github.com/dallay/file-organizer/commit/ce7b5306a84a8d9da96ceb8a2d94e77ec5a0d6a3))
+
+
+### Documentation
+
+* translate README to English ([6a25f0a](https://github.com/dallay/file-organizer/commit/6a25f0a0bc46797035b57774eb974d92a7a19371))
+* translate README to English ([7103593](https://github.com/dallay/file-organizer/commit/7103593beee417a9674a1370591ff219942f5c45))
+
 ## [0.2.0](https://github.com/dallay/file-organizer/compare/v0.1.0...v0.2.0) (2026-08-05)
 
 
