@@ -43,7 +43,7 @@
 		"typescript": "^7.0.0"
 	},
 	"optionalDependencies": {
-		"@dallay/organiza-darwin-arm64": "file:../../../../../../var/folders/zz/d4kl1hfj1j15nxm43d24px300000gn/T/tmp.XsZYeE5nam/dallay-organiza-darwin-arm64-0.1.0.tgz",
+		"@dallay/organiza-darwin-arm64": "0.1.0",
 		"@dallay/organiza-darwin-x64": "0.1.0",
 		"@dallay/organiza-linux-arm64": "0.1.0",
 		"@dallay/organiza-linux-x64": "0.1.0",
