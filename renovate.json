@@ -1,0 +1,81 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"config:recommended",
+		"docker:pinDigests",
+		"helpers:pinGitHubActionDigests",
+		":pinDevDependencies",
+		"abandonments:recommended"
+	],
+	"timezone": "Europe/Madrid",
+	"semanticCommits": "enabled",
+	"semanticCommitType": "chore",
+	"semanticCommitScope": "deps",
+	"dependencyDashboard": true,
+	"automerge": false,
+	"automergeType": "branch",
+	"automergeStrategy": "auto",
+	"platformAutomerge": true,
+	"internalChecksFilter": "strict",
+	"prCreation": "not-pending",
+	"prConcurrentLimit": 5,
+	"prHourlyLimit": 2,
+	"labels": ["dependencies", "renovate"],
+	"minimumReleaseAge": "3 days",
+	"osvVulnerabilityAlerts": true,
+	"vulnerabilityAlerts": {
+		"enabled": true,
+		"minimumReleaseAge": null,
+		"automerge": true,
+		"labels": ["security"]
+	},
+	"packageRules": [
+		{
+			"description": "release-please owns @dallay/organiza packages; Renovate must never touch them",
+			"matchPackageNames": ["@dallay/organiza", "@dallay/organiza-*"],
+			"enabled": false
+		},
+		{
+			"description": "major upgrades stay manual for review",
+			"matchUpdateTypes": ["major"],
+			"automerge": false
+		},
+		{
+			"description": "cargo minor/patch grouped, automerge after CI passes",
+			"matchManagers": ["cargo"],
+			"groupName": "cargo dependencies",
+			"matchUpdateTypes": ["minor", "patch", "digest"],
+			"automerge": true,
+			"schedule": ["after 5pm", "every weekend"]
+		},
+		{
+			"description": "npm devDependencies grouped, automerge after CI passes",
+			"matchManagers": ["npm"],
+			"matchDepTypes": ["devDependencies"],
+			"groupName": "npm devDependencies",
+			"matchUpdateTypes": ["minor", "patch"],
+			"automerge": true
+		},
+		{
+			"description": "Docker base images grouped, automerge digest/minor/patch",
+			"matchManagers": ["dockerfile"],
+			"groupName": "Docker images",
+			"matchUpdateTypes": ["digest", "minor", "patch"],
+			"automerge": true,
+			"schedule": ["after 5pm", "every weekend"]
+		},
+		{
+			"description": "GitHub Actions grouped, automerge minor/patch/digest",
+			"matchManagers": ["github-actions"],
+			"groupName": "GitHub Actions",
+			"matchUpdateTypes": ["minor", "patch", "digest"],
+			"automerge": true,
+			"schedule": ["after 5pm", "every weekend"]
+		}
+	],
+	"lockFileMaintenance": {
+		"enabled": true,
+		"automerge": true,
+		"schedule": ["before 6am on monday"]
+	}
+}
