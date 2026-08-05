@@ -1,0 +1,30 @@
+{
+  "name": "@dallay/${node_pkg}",
+  "publishConfig": {
+    "access": "public"
+  },
+  "version": "${node_version}",
+  "description": "Platform-specific binary for organiza (${node_os}-${node_arch})",
+  "author": "Yuniel Acosta <yunielacosta738@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dallay/file-organizer.git"
+  },
+  "homepage": "https://github.com/dallay/file-organizer#readme",
+  "os": ["${node_os}"],
+  "cpu": ["${node_arch}"],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "organiza": "bin/${node_bin}"
+  },
+  "files": [
+    "bin"
+  ],
+  "preferUnplugged": true
+  ,"scripts": {
+    "prepublishOnly": "chmod -v +x bin/* || true"
+  }
+}

@@ -3,9 +3,10 @@ schema: spec-driven
 
 context: |
   Tech stack: Rust 2021 CLI binary/library; anyhow, clap, serde, toml, walkdir; tempfile for tests.
+  Distribution: npm wrapper (TypeScript, compiled with tsc to lib/index.js) under npm/organiza, six @dallay/organiza-* platform packages generated in CI from npm/package.json.tmpl, release automation in .github/workflows/release.yml, multi-stage Docker image (alpine+musl).
   Architecture: Small cross-platform CLI; domain/file-organization logic in src/lib.rs, command parsing in src/main.rs; OS schedulers under platform/.
-  Testing: Cargo unit tests in src/lib.rs; run with `cargo test`; no integration/e2e or coverage configuration detected.
-  Style: rustfmt formatting and Clippy linting are available; no repository-specific config or CI workflow detected.
+  Testing: Cargo unit tests in src/lib.rs; run with `cargo test`; TypeScript wrapper typecheck with `tsc --noEmit` in npm/organiza; no integration/e2e or coverage configuration detected.
+  Style: rustfmt formatting and Clippy linting are available; TypeScript uses strict mode; no repository-specific config or CI workflow detected.
   strict_tdd: true
 
 testing:
@@ -13,6 +14,7 @@ testing:
   runner: cargo test
   layers:
     - unit tests in src/lib.rs
+    - TypeScript wrapper typecheck: tsc --noEmit in npm/organiza
   coverage: unavailable (no coverage tool or threshold configured)
   formatter: cargo fmt -- --check
   linter: cargo clippy --all-targets --all-features -- -D warnings
@@ -36,9 +38,11 @@ rules:
     - Load relevant coding skills for the project stack
     - STRICT TDD: write or update a failing test before production code
     - test_command: cargo test
+    - For npm wrapper changes, run `tsc --noEmit` in npm/organiza (in addition to cargo test when Rust changed)
   verify:
     - Run `cargo test` if test infrastructure exists
     - Run `cargo fmt -- --check` and `cargo clippy --all-targets --all-features -- -D warnings` when relevant
+    - Run `tsc --noEmit` in npm/organiza when the npm wrapper changed
     - Compare implementation against every spec scenario
     - coverage: unavailable; no coverage tool or threshold configured
   archive:
