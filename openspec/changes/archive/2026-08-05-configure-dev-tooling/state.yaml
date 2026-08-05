@@ -1,0 +1,48 @@
+change: configure-dev-tooling
+current_phase: archived
+completed:
+  - explore
+  - propose
+  - spec
+  - design
+  - tasks
+  - apply
+  - verify
+  - archive
+next: none
+updated: 2026-08-05
+archived: 2026-08-05T08:00:00Z
+archived_to: openspec/changes/archive/2026-08-05-configure-dev-tooling/
+canonical_specs:
+  - openspec/specs/agent-instruction-sync/spec.md
+  - openspec/specs/ci-quality-validation/spec.md
+  - openspec/specs/local-development-hooks/spec.md
+merge_kind: additive_only
+merge_note: |
+  All three delta specs (agent-instruction-sync, ci-quality-validation,
+  local-development-hooks) target NEW domains that did not previously exist
+  under openspec/specs/. Each delta spec is therefore a full spec, and every
+  Requirement under it was ADDED; there are no MODIFIED or REMOVED sections.
+  The copies are byte-identical to the delta specs (diff -q verified). This
+  honors openspec/config.yaml::rules.archive ("Warn before merging destructive
+  deltas (large removals)") — no destructive merge was performed. Archive
+  bookkeeping fixes applied per verify-report SUGGESTIONS: design.md "four-target"
+  -> "three-target" mapping (S1), tasks.md Phase 5 checkboxes 5.1-5.6 ticked
+  with evidence and 5.1 corrected to three symlink targets (S2). Verification
+  verdict: PASS (no CRITICAL, no WARNING).
+artifacts:
+  - exploration.md
+  - proposal.md
+  - specs/agent-instruction-sync/spec.md
+  - specs/ci-quality-validation/spec.md
+  - specs/local-development-hooks/spec.md
+  - design.md
+  - tasks.md
+  - verify-report.md
+  - archive-report.md
+test_results:
+  total: 35
+  passed: 35
+  failed: 0
+  local_gate: green
+  verification_verdict: PASS
