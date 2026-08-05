@@ -118,7 +118,7 @@ fn readme_current_scope_paragraph_is_translated() {
     assert!(readme.contains(
         "The move operation uses `rename`, which is atomic within the same volume. \
          If the source and destination are on different volumes, an error is \
-         reported instead of deleting or partially copying the file."
+         reported instead of partially copying the file."
     ));
 }
 
@@ -168,7 +168,7 @@ fn readme_uses_your_username_placeholder() {
     let readme = readme();
     assert!(readme
         .contains(r#"sed "s#YOUR_USERNAME#$(whoami)#" platform/macos/com.organiza.plist.example"#));
-    assert!(readme.contains(r"C:\\Users\\YOUR_USERNAME\\.local\\bin\\organiza.exe run"));
+    assert!(readme.contains(r"C:\Users\YOUR_USERNAME\.local\bin\organiza.exe run"));
     assert!(!readme.contains("TU_USUARIO"));
 }
 
@@ -237,7 +237,9 @@ fn readme_top_level_headings_preserve_original_order() {
 #[test]
 fn readme_headings_contain_no_spanish_diacritics() {
     let readme = readme();
-    let spanish_chars = ['á', 'é', 'í', 'ó', 'ú', 'ñ', 'Á', 'É', 'Í', 'Ó', 'Ú', 'Ñ', '¿', '¡'];
+    let spanish_chars = [
+        'á', 'é', 'í', 'ó', 'ú', 'ñ', 'Á', 'É', 'Í', 'Ó', 'Ú', 'Ñ', '¿', '¡',
+    ];
 
     for line in readme.lines() {
         let trimmed = line.trim_start();

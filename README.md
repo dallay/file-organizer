@@ -126,7 +126,7 @@ The lock is created with `create_dir`, so it does not rely on `flock` and works 
 ```bash
 mkdir -p "$HOME/.local/bin" "$HOME/Library/LaunchAgents"
 cp target/release/organiza "$HOME/.local/bin/"
-sed "s#TU_USUARIO#$(whoami)#" platform/macos/com.organiza.plist.example \
+sed "s#YOUR_USERNAME#$(whoami)#" platform/macos/com.organiza.plist.example \
   > "$HOME/Library/LaunchAgents/com.organiza.plist"
 launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.organiza.plist"
 ```
