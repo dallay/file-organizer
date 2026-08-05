@@ -1,0 +1,80 @@
+change: configurable-categories-and-sources
+current_phase: archived
+completed:
+  - explore
+  - propose
+  - spec
+  - design
+  - tasks
+  - apply
+  - verify
+  - archive
+next: none
+updated: 2026-08-04
+archived: 2026-08-04T23:25:00Z
+archived_to: openspec/changes/archive/2026-08-04-configurable-categories-and-sources/
+canonical_specs:
+  - openspec/specs/classification/spec.md
+  - openspec/specs/category-configuration/spec.md
+  - openspec/specs/config-validation/spec.md
+  - openspec/specs/directory-movement/spec.md
+  - openspec/specs/downloads-autodetect/spec.md
+  - openspec/specs/source-precedence-and-first-run/spec.md
+merge_kind: additive_only
+merge_note: |
+  No MODIFIED or REMOVED sections in any of the six delta specs. All
+  Requirements under each delta spec were ADDED, so the merge into
+  openspec/specs/ created the canonical specs from scratch and did
+  not remove or rewrite any prior source-of-truth content. This
+  honors openspec/config.yaml::rules.archive ("Warn before merging
+  destructive deltas (large removals)") — no destructive merge was
+  performed at the spec level. The destructive element of the change
+  is in the implementation (13 Spanish category defaults replaced
+  by 7 English flat names), which is the user-approved locked
+  decision B from intent.md and was verified to preserve backward
+  compatibility (legacy Spanish dirs are reclassified once).
+artifacts:
+  - exploration.md
+  - intent.md
+  - proposal.md
+  - specs/classification/spec.md
+  - specs/category-configuration/spec.md
+  - specs/config-validation/spec.md
+  - specs/directory-movement/spec.md
+  - specs/downloads-autodetect/spec.md
+  - specs/source-precedence-and-first-run/spec.md
+  - design/index.md
+  - design/categories-module.md
+  - design/sequences.md
+  - design/rationale.md
+  - design/risks.md
+  - tasks.md
+  - verification.md
+  - notes.md
+  - src/categories.rs (NEW)
+  - src/lib.rs (MODIFIED)
+  - src/main.rs (MODIFIED)
+  - config.example.toml (MODIFIED)
+  - README.md (MODIFIED)
+locked_decisions:
+  categories_default:
+    - Text
+    - Other
+    - Executable
+    - Compressed
+    - Audio
+    - Video
+    - Image
+  code_files: other
+  backward_compat: re_classify_once
+  first_run_no_config: default_plus_autodetect
+test_results:
+  total: 35
+  passed: 35
+  failed: 0
+  local_gate: green
+  verification_verdict: PASS_WITH_WARNINGS
+verification_warnings: 4
+outstanding_user_decisions:
+  - chain_strategy: pending
+  - rust_toolchain_untracked: pending (likely keep, harmless)

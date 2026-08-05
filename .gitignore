@@ -2,7 +2,6 @@
 # managed block below. AgentSync owns only the marker-delimited block.
 target/
 .DS_Store
-
 # START AI Agent Symlinks
 .agents/skills/*.bak
 .claude/commands/

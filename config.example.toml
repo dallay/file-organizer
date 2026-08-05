@@ -9,7 +9,23 @@ min_age_seconds = 60
 ignore_hidden = true
 log_file = "~/Library/Logs/FileOrganizer.log"
 
-# Reglas opcionales. Sobrescriben las reglas integradas y aceptan nuevas extensiones.
-[extensions]
-# psd = "Diseño"
-# tex = "Documentos/LaTeX"
+# Built-in default categories: `Text`, `Other`, `Executable`, `Compressed`,
+# `Audio`, `Video`, `Image`. `Text` includes: txt, md, rtf, doc, docx, pages,
+# pdf, xlsx, xls, pptx, ppt, key, numbers, csv, epub, odt, ods, odp, log, tex.
+# Code files (rs, py, ts, js, ...) intentionally land in `Other` — add a
+# `[[categories]]` rule below to opt them out.
+
+# Add extensions to a built-in category without losing its defaults:
+# [[categories]]
+# name = "Text"
+# extensions = ["foo", "bar"]
+
+# Replace a built-in category entirely (its built-in extensions are dropped):
+# [[categories]]
+# name = "Text"
+# extensions = ["onlytxt"]
+# replace = true
+
+# Per-extension overrides, applied AFTER `[[categories]]` (last-write wins):
+# [extensions]
+# md = "Docs"

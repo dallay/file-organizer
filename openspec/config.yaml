@@ -1,0 +1,45 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: Rust 2021 CLI binary/library; anyhow, clap, serde, toml, walkdir; tempfile for tests.
+  Architecture: Small cross-platform CLI; domain/file-organization logic in src/lib.rs, command parsing in src/main.rs; OS schedulers under platform/.
+  Testing: Cargo unit tests in src/lib.rs; run with `cargo test`; no integration/e2e or coverage configuration detected.
+  Style: rustfmt formatting and Clippy linting are available; no repository-specific config or CI workflow detected.
+  strict_tdd: true
+
+testing:
+  strict_tdd: true
+  runner: cargo test
+  layers:
+    - unit tests in src/lib.rs
+  coverage: unavailable (no coverage tool or threshold configured)
+  formatter: cargo fmt -- --check
+  linter: cargo clippy --all-targets --all-features -- -D warnings
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group tasks by phase (infrastructure, implementation, testing)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+  apply:
+    - Follow existing code patterns and conventions
+    - Load relevant coding skills for the project stack
+    - STRICT TDD: write or update a failing test before production code
+    - test_command: cargo test
+  verify:
+    - Run `cargo test` if test infrastructure exists
+    - Run `cargo fmt -- --check` and `cargo clippy --all-targets --all-features -- -D warnings` when relevant
+    - Compare implementation against every spec scenario
+    - coverage: unavailable; no coverage tool or threshold configured
+  archive:
+    - Warn before merging destructive deltas (large removals)
