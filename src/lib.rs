@@ -207,7 +207,8 @@ pub fn run(config: &Config, options: RunOptions) -> Result<()> {
         // `Other/<dirname>/` instead of being classified file-by-file.
         for (source, destination_root) in dirs {
             if let Err(error) = move_dir(&source, &destination_root, config, options, &mut logger) {
-                logger.line(format!("ERROR: {}", error))?;
+                logger
+                    .line(rust_i18n::t!("error_occurred", error = error.to_string()).to_string())?;
                 failures += 1;
             }
         }
@@ -216,13 +217,17 @@ pub fn run(config: &Config, options: RunOptions) -> Result<()> {
         for source in files {
             if is_recent(&source, config.min_age_seconds) {
                 if options.verbose {
-                    logger.line(format!("Reciente, omitido: {}", source.display()))?;
+                    logger.line(
+                        rust_i18n::t!("skipped_recent", path = source.display().to_string())
+                            .to_string(),
+                    )?;
                 }
                 continue;
             }
 
             if let Err(error) = move_file(&source, &root, &composed, options, &mut logger) {
-                logger.line(format!("ERROR: {}", error))?;
+                logger
+                    .line(rust_i18n::t!("error_occurred", error = error.to_string()).to_string())?;
                 failures += 1;
             }
         }
@@ -360,7 +365,9 @@ fn move_file(
     let destination = match (requested_destination.exists(), options.conflict_policy) {
         (false, _) => requested_destination,
         (true, ConflictPolicy::Skip) => {
-            logger.line(format!("Omitido por conflicto: {}", source.display()))?;
+            logger.line(
+                rust_i18n::t!("skipped_conflict", path = source.display().to_string()).to_string(),
+            )?;
             return Ok(());
         }
         (true, ConflictPolicy::Rename) => unique_destination(&requested_destination),
@@ -375,11 +382,20 @@ fn move_file(
     };
 
     let action = if options.dry_run {
-        "Se movería"
+        rust_i18n::t!("dry_run").to_string()
     } else {
-        "Movido"
+        rust_i18n::t!("real_run").to_string()
     };
-    logger.line(format!("{}: {} → {}", action, source.display(), category))?;
+
+    logger.line(
+        rust_i18n::t!(
+            "moved",
+            action = action,
+            source = source.display().to_string(),
+            category = category
+        )
+        .to_string(),
+    )?;
     if options.dry_run {
         return Ok(());
     }
