@@ -147,6 +147,11 @@ pub fn resolve_config(cli_config: Option<&Path>, positional_dirs: &[PathBuf]) ->
 
 fn validate_config(config: &Config) -> Result<()> {
     validate_categories(&config.categories)?;
+    if let Some(language) = &config.language {
+        if !crate::i18n::is_supported_language(language) {
+            anyhow::bail!("{}", rust_i18n::t!("invalid_language", lang = language));
+        }
+    }
     if config
         .source_directories
         .iter()
@@ -718,6 +723,36 @@ fn chrono_like_timestamp() -> String {
 
 #[cfg(test)]
 pub(crate) static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// RAII guard that switches the active locale for a test and restores the
+/// previous one on drop — including during assertion unwinding. Holds
+/// [`ENV_LOCK`] for the whole lifetime so parallel tests never observe a
+/// half-restored locale.
+#[cfg(test)]
+pub(crate) struct LocaleGuard {
+    _env_lock: std::sync::MutexGuard<'static, ()>,
+    previous: String,
+}
+
+#[cfg(test)]
+impl LocaleGuard {
+    pub(crate) fn set(locale: &str) -> Self {
+        let _env_lock = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+        let previous = rust_i18n::locale().to_string();
+        rust_i18n::set_locale(locale);
+        Self {
+            _env_lock,
+            previous,
+        }
+    }
+}
+
+#[cfg(test)]
+impl Drop for LocaleGuard {
+    fn drop(&mut self) {
+        rust_i18n::set_locale(&self.previous);
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -1328,11 +1363,7 @@ mod tests {
 
     #[test]
     fn error_messages_are_translated_to_spanish() {
-        // Protect locale changes with the ENV_LOCK to prevent test interference
-        let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
-
-        // Set Spanish locale
-        rust_i18n::set_locale("es");
+        let _guard = LocaleGuard::set("es");
 
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join("config.toml");
@@ -1362,11 +1393,7 @@ mod tests {
 
     #[test]
     fn error_messages_are_translated_to_english() {
-        // Protect locale changes with the ENV_LOCK to prevent test interference
-        let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
-
-        // Set English locale
-        rust_i18n::set_locale("en");
+        let _guard = LocaleGuard::set("en");
 
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join("config.toml");
@@ -1396,8 +1423,7 @@ mod tests {
 
     #[test]
     fn runtime_messages_are_translated_to_spanish() {
-        let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
-        rust_i18n::set_locale("es");
+        let _guard = LocaleGuard::set("es");
 
         assert_eq!(&*rust_i18n::locale(), "es");
 
@@ -1426,8 +1452,7 @@ mod tests {
 
     #[test]
     fn runtime_messages_are_translated_to_english() {
-        let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
-        rust_i18n::set_locale("en");
+        let _guard = LocaleGuard::set("en");
 
         assert_eq!(&*rust_i18n::locale(), "en");
 
@@ -1451,5 +1476,41 @@ mod tests {
             "expected 'processed_failures_count' in English, got: {}",
             processed_failures
         );
+    }
+
+    #[test]
+    fn unsupported_config_language_fails_with_localized_error() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+        fs::write(&config_path, "language = \"fr\"\n").unwrap();
+
+        {
+            let _guard = LocaleGuard::set("es");
+            let error = format!("{:#}", load_config(&config_path).unwrap_err());
+            assert!(
+                error.contains("Idioma no soportado 'fr'"),
+                "expected Spanish 'invalid_language', got: {}",
+                error
+            );
+        }
+
+        {
+            let _guard = LocaleGuard::set("en");
+            let error = format!("{:#}", load_config(&config_path).unwrap_err());
+            assert!(
+                error.contains("Unsupported language 'fr'"),
+                "expected English 'invalid_language', got: {}",
+                error
+            );
+        }
+    }
+
+    #[test]
+    fn supported_config_language_is_accepted() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+        fs::write(&config_path, "language = \"es\"\n").unwrap();
+        let config = load_config(&config_path).unwrap();
+        assert_eq!(config.language.as_deref(), Some("es"));
     }
 }

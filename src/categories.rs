@@ -453,10 +453,7 @@ mod tests {
 
     #[test]
     fn category_validation_messages_are_translated_to_spanish() {
-        let _guard = crate::ENV_LOCK
-            .lock()
-            .unwrap_or_else(|err| err.into_inner());
-        rust_i18n::set_locale("es");
+        let _guard = crate::LocaleGuard::set("es");
 
         let empty_name = validate_categories(&[CategoryRule {
             name: String::new(),
@@ -485,10 +482,7 @@ mod tests {
 
     #[test]
     fn category_validation_messages_are_translated_to_english() {
-        let _guard = crate::ENV_LOCK
-            .lock()
-            .unwrap_or_else(|err| err.into_inner());
-        rust_i18n::set_locale("en");
+        let _guard = crate::LocaleGuard::set("en");
 
         let empty_name = validate_categories(&[CategoryRule {
             name: String::new(),
