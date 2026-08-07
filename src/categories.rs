@@ -209,27 +209,30 @@ pub(crate) fn validate_categories(rules: &[CategoryRule]) -> anyhow::Result<()> 
     let mut seen_names: HashSet<String> = HashSet::new();
     for rule in rules {
         if rule.name.trim().is_empty() {
-            anyhow::bail!("category name cannot be empty");
+            anyhow::bail!("{}", rust_i18n::t!("category_name_empty"));
         }
         if is_unsafe_category_name(&rule.name) {
             anyhow::bail!(
-                "category name '{}' is not a safe folder name (absolute path or '..' segment)",
-                rule.name
+                "{}",
+                rust_i18n::t!("category_invalid_path", name = rule.name)
             );
         }
         if rule.extensions.is_empty() {
-            anyhow::bail!("category '{}' has empty extensions list", rule.name);
+            anyhow::bail!(
+                "{}",
+                rust_i18n::t!("category_empty_extensions", name = rule.name)
+            );
         }
         for extension in &rule.extensions {
             if extension.trim().is_empty() {
-                anyhow::bail!("category '{}' contains an empty extension", rule.name);
+                anyhow::bail!(
+                    "{}",
+                    rust_i18n::t!("category_empty_extension", name = rule.name)
+                );
             }
         }
         if !seen_names.insert(rule.name.clone()) {
-            anyhow::bail!(
-                "duplicate category name '{}' across [[categories]] rules",
-                rule.name
-            );
+            anyhow::bail!("{}", rust_i18n::t!("category_duplicate", name = rule.name));
         }
     }
     Ok(())
@@ -445,6 +448,64 @@ mod tests {
         assert_eq!(
             classify(Path::new("design.psd"), &map),
             category_for(Path::new("design.psd"), &config)
+        );
+    }
+
+    #[test]
+    fn category_validation_messages_are_translated_to_spanish() {
+        let _guard = crate::LocaleGuard::set("es");
+
+        let empty_name = validate_categories(&[CategoryRule {
+            name: String::new(),
+            extensions: vec!["x".to_string()],
+            replace: false,
+        }]);
+        let error = format!("{:#}", empty_name.unwrap_err());
+        assert!(
+            error.contains("el nombre de categoría no puede estar vacío"),
+            "expected Spanish 'category_name_empty', got: {}",
+            error
+        );
+
+        let empty_extensions = validate_categories(&[CategoryRule {
+            name: "Text".to_string(),
+            extensions: vec![],
+            replace: false,
+        }]);
+        let error = format!("{:#}", empty_extensions.unwrap_err());
+        assert!(
+            error.contains("la categoría 'Text' tiene una lista de extensiones vacía"),
+            "expected Spanish 'category_empty_extensions', got: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn category_validation_messages_are_translated_to_english() {
+        let _guard = crate::LocaleGuard::set("en");
+
+        let empty_name = validate_categories(&[CategoryRule {
+            name: String::new(),
+            extensions: vec!["x".to_string()],
+            replace: false,
+        }]);
+        let error = format!("{:#}", empty_name.unwrap_err());
+        assert!(
+            error.contains("category name cannot be empty"),
+            "expected English 'category_name_empty', got: {}",
+            error
+        );
+
+        let empty_extensions = validate_categories(&[CategoryRule {
+            name: "Text".to_string(),
+            extensions: vec![],
+            replace: false,
+        }]);
+        let error = format!("{:#}", empty_extensions.unwrap_err());
+        assert!(
+            error.contains("category 'Text' has empty extensions list"),
+            "expected English 'category_empty_extensions', got: {}",
+            error
         );
     }
 }

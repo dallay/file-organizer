@@ -61,6 +61,25 @@ organiza run --config ./config.toml --log /dev/null
 
 The folders specified at the end replace `source_directories`. The default behavior waits 60 seconds, ignores hidden files, and renames conflicts (`file (1).pdf`).
 
+## Language
+
+`organiza` speaks English and Spanish. The interface language is resolved in this order:
+
+1. `--lang en|es` on the command line (wins over everything).
+2. `language = "en" | "es"` in the config file.
+3. The system locale (`LANG`, `LC_ALL`, `LANGUAGE`).
+4. English as the final fallback.
+
+```bash
+organiza --lang es run --dry-run
+organiza --lang en --help
+```
+
+```toml
+# config.toml — pin the language so scripts are deterministic
+language = "es"
+```
+
 ## Default categories
 
 The binary ships seven flat English categories:

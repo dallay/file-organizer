@@ -9,6 +9,10 @@ min_age_seconds = 60
 ignore_hidden = true
 log_file = "~/Library/Logs/FileOrganizer.log"
 
+# Interface language: "en" or "es". If omitted, the language is detected from
+# the system locale, and the CLI flag `--lang en|es` overrides everything.
+# language = "es"
+
 # Built-in default categories: `Text`, `Other`, `Executable`, `Compressed`,
 # `Audio`, `Video`, `Image`. `Text` includes: txt, md, rtf, doc, docx, pages,
 # pdf, xlsx, xls, pptx, ppt, key, numbers, csv, epub, odt, ods, odp, log, tex.

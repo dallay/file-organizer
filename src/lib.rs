@@ -8,7 +8,11 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 use walkdir::{DirEntry, WalkDir};
 
+// Initialize i18n - this loads translations at compile time
+rust_i18n::i18n!("locales");
+
 mod categories;
+pub mod i18n;
 
 #[cfg(test)]
 pub(crate) use categories::category_for;
@@ -36,6 +40,8 @@ pub struct Config {
     pub min_age_seconds: u64,
     pub ignore_hidden: bool,
     pub log_file: Option<PathBuf>,
+    /// Interface language (en, es). If not specified, detects from system.
+    pub language: Option<String>,
     /// Extension-to-category overrides. Keys are case-insensitive.
     pub extensions: HashMap<String, String>,
     /// User-supplied category declarations. Order = TOML declaration order.
@@ -51,6 +57,7 @@ impl Default for Config {
             min_age_seconds: 60,
             ignore_hidden: true,
             log_file: None,
+            language: None,
             extensions: HashMap::new(),
             categories: Vec::new(),
         }
@@ -86,9 +93,9 @@ pub fn default_config_path() -> PathBuf {
 
 pub fn load_config(path: &Path) -> Result<Config> {
     let source = fs::read_to_string(path)
-        .with_context(|| format!("no se pudo leer la configuración {}", path.display()))?;
-    let mut config: Config =
-        toml::from_str(&source).with_context(|| format!("TOML inválido en {}", path.display()))?;
+        .with_context(|| rust_i18n::t!("config_read_failed", path = path.display().to_string()))?;
+    let mut config: Config = toml::from_str(&source)
+        .with_context(|| rust_i18n::t!("invalid_toml", path = path.display().to_string()))?;
     config.source_directories = config
         .source_directories
         .into_iter()
@@ -118,8 +125,13 @@ pub fn resolve_config(cli_config: Option<&Path>, positional_dirs: &[PathBuf]) ->
 
     let mut config = match (cli_config.is_some(), config_path.exists()) {
         (false, false) => Config::default(),
-        _ => load_config(&config_path)
-            .with_context(|| format!("no se pudo leer {}", config_path.display()))?,
+        _ => load_config(&config_path).with_context(|| {
+            rust_i18n::t!(
+                "config_read_failed",
+                path = config_path.display().to_string()
+            )
+            .to_string()
+        })?,
     };
 
     if !positional_dirs.is_empty() {
@@ -135,19 +147,27 @@ pub fn resolve_config(cli_config: Option<&Path>, positional_dirs: &[PathBuf]) ->
 
 fn validate_config(config: &Config) -> Result<()> {
     validate_categories(&config.categories)?;
+    if let Some(language) = &config.language {
+        if !crate::i18n::is_supported_language(language) {
+            anyhow::bail!("{}", rust_i18n::t!("invalid_language", lang = language));
+        }
+    }
     if config
         .source_directories
         .iter()
         .any(|path| path.as_os_str().is_empty())
     {
-        anyhow::bail!("source_directories contiene una ruta vacía");
+        anyhow::bail!("{}", rust_i18n::t!("empty_source_dir"));
     }
     for (extension, category) in &config.extensions {
         if extension.trim().is_empty() || category.trim().is_empty() {
-            anyhow::bail!("extensions no puede contener claves o categorías vacías");
+            anyhow::bail!("{}", rust_i18n::t!("empty_extensions"));
         }
         if is_unsafe_category_name(category) {
-            anyhow::bail!("la categoría '{}' contiene una ruta no permitida", category);
+            anyhow::bail!(
+                "{}",
+                rust_i18n::t!("invalid_category_path", category = category)
+            );
         }
     }
     Ok(())
@@ -179,14 +199,17 @@ pub fn run(config: &Config, options: RunOptions) -> Result<()> {
     for configured_root in &config.source_directories {
         let root = expand_home(configured_root);
         if !root.is_dir() {
-            logger.line(format!("La carpeta no existe: {}", root.display()))?;
+            logger.line(
+                rust_i18n::t!("folder_not_exists", path = root.display().to_string()).to_string(),
+            )?;
             failures += 1;
             continue;
         }
 
-        let root = fs::canonicalize(&root)
-            .with_context(|| format!("no se pudo resolver {}", root.display()))?;
-        logger.line(format!("Procesando: {}", root.display()))?;
+        let root = fs::canonicalize(&root).with_context(|| {
+            rust_i18n::t!("resolve_failed", path = root.display().to_string()).to_string()
+        })?;
+        logger.line(rust_i18n::t!("processing", path = root.display().to_string()).to_string())?;
 
         let dirs = collect_top_level_directories(&root, config, &skip_paths)?;
 
@@ -194,7 +217,8 @@ pub fn run(config: &Config, options: RunOptions) -> Result<()> {
         // `Other/<dirname>/` instead of being classified file-by-file.
         for (source, destination_root) in dirs {
             if let Err(error) = move_dir(&source, &destination_root, config, options, &mut logger) {
-                logger.line(format!("ERROR: {}", error))?;
+                logger
+                    .line(rust_i18n::t!("error_occurred", error = error.to_string()).to_string())?;
                 failures += 1;
             }
         }
@@ -203,13 +227,17 @@ pub fn run(config: &Config, options: RunOptions) -> Result<()> {
         for source in files {
             if is_recent(&source, config.min_age_seconds) {
                 if options.verbose {
-                    logger.line(format!("Reciente, omitido: {}", source.display()))?;
+                    logger.line(
+                        rust_i18n::t!("skipped_recent", path = source.display().to_string())
+                            .to_string(),
+                    )?;
                 }
                 continue;
             }
 
             if let Err(error) = move_file(&source, &root, &composed, options, &mut logger) {
-                logger.line(format!("ERROR: {}", error))?;
+                logger
+                    .line(rust_i18n::t!("error_occurred", error = error.to_string()).to_string())?;
                 failures += 1;
             }
         }
@@ -218,8 +246,8 @@ pub fn run(config: &Config, options: RunOptions) -> Result<()> {
     drop(lock);
     if failures > 0 {
         anyhow::bail!(
-            "{} carpeta(s) o archivo(s) no se pudieron procesar",
-            failures
+            "{}",
+            rust_i18n::t!("processed_failures_count", count = failures.to_string())
         );
     }
     Ok(())
@@ -286,8 +314,9 @@ fn collect_top_level_directories(
         if count == 0 {
             continue;
         }
-        let canonical_src = fs::canonicalize(path)
-            .with_context(|| format!("no se pudo resolver {}", path.display()))?;
+        let canonical_src = fs::canonicalize(path).with_context(|| {
+            rust_i18n::t!("resolve_failed", path = path.display().to_string()).to_string()
+        })?;
         if skip_paths.contains(&canonical_src) {
             continue;
         }
@@ -343,30 +372,44 @@ fn move_file(
     let category = classify(source, composed);
     let destination_directory = root.join(&category);
     let requested_destination =
-        destination_directory.join(source.file_name().context("archivo sin nombre")?);
+        destination_directory.join(source.file_name().context(rust_i18n::t!("no_file_name"))?);
     let destination = match (requested_destination.exists(), options.conflict_policy) {
         (false, _) => requested_destination,
         (true, ConflictPolicy::Skip) => {
-            logger.line(format!("Omitido por conflicto: {}", source.display()))?;
+            logger.line(
+                rust_i18n::t!("skipped_conflict", path = source.display().to_string()).to_string(),
+            )?;
             return Ok(());
         }
         (true, ConflictPolicy::Rename) => unique_destination(&requested_destination),
         (true, ConflictPolicy::Overwrite) if requested_destination.is_dir() => {
-            logger.line(format!(
-                "Omitido: destino es una carpeta: {}",
-                requested_destination.display()
-            ))?;
+            logger.line(
+                rust_i18n::t!(
+                    "skipped_destination_is_dir",
+                    path = requested_destination.display().to_string()
+                )
+                .to_string(),
+            )?;
             return Ok(());
         }
         (true, ConflictPolicy::Overwrite) => requested_destination,
     };
 
     let action = if options.dry_run {
-        "Se movería"
+        rust_i18n::t!("dry_run").to_string()
     } else {
-        "Movido"
+        rust_i18n::t!("real_run").to_string()
     };
-    logger.line(format!("{}: {} → {}", action, source.display(), category))?;
+
+    logger.line(
+        rust_i18n::t!(
+            "moved",
+            action = action,
+            source = source.display().to_string(),
+            category = category
+        )
+        .to_string(),
+    )?;
     if options.dry_run {
         return Ok(());
     }
@@ -376,11 +419,12 @@ fn move_file(
         fs::remove_file(&destination)?;
     }
     fs::rename(source, &destination).with_context(|| {
-        format!(
-            "no se pudo mover {} a {}",
-            source.display(),
-            destination.display()
+        rust_i18n::t!(
+            "move_failed",
+            source = source.display().to_string(),
+            destination = destination.display().to_string()
         )
+        .to_string()
     })?;
     Ok(())
 }
@@ -397,38 +441,46 @@ fn move_dir(
 ) -> Result<()> {
     let file_name = source
         .file_name()
-        .context("directorio sin nombre")?
+        .context(rust_i18n::t!("no_dir_name"))?
         .to_owned();
     let requested_destination = destination_root.join(&file_name);
 
     let destination = match (requested_destination.exists(), options.conflict_policy) {
         (false, _) => requested_destination,
         (true, ConflictPolicy::Skip) => {
-            logger.line(format!("Omitido por conflicto: {}", source.display()))?;
+            logger.line(
+                rust_i18n::t!("skipped_conflict", path = source.display().to_string()).to_string(),
+            )?;
             return Ok(());
         }
         (true, ConflictPolicy::Rename) => unique_destination(&requested_destination),
         (true, ConflictPolicy::Overwrite) if requested_destination.is_dir() => {
-            logger.line(format!(
-                "Omitido: destino es una carpeta: {}",
-                requested_destination.display()
-            ))?;
+            logger.line(
+                rust_i18n::t!(
+                    "skipped_destination_is_dir",
+                    path = requested_destination.display().to_string()
+                )
+                .to_string(),
+            )?;
             return Ok(());
         }
         (true, ConflictPolicy::Overwrite) => requested_destination,
     };
 
     let action = if options.dry_run {
-        "Se movería"
+        rust_i18n::t!("dry_run").to_string()
     } else {
-        "Movido"
+        rust_i18n::t!("real_run").to_string()
     };
-    logger.line(format!(
-        "{}: {} → {}",
-        action,
-        source.display(),
-        DEFAULT_CATEGORY
-    ))?;
+    logger.line(
+        rust_i18n::t!(
+            "moved",
+            action = action,
+            source = source.display().to_string(),
+            category = DEFAULT_CATEGORY
+        )
+        .to_string(),
+    )?;
     if options.dry_run {
         return Ok(());
     }
@@ -438,11 +490,12 @@ fn move_dir(
         fs::remove_file(&destination)?;
     }
     fs::rename(source, &destination).with_context(|| {
-        format!(
-            "no se pudo mover {} a {}",
-            source.display(),
-            destination.display()
+        rust_i18n::t!(
+            "move_failed",
+            source = source.display().to_string(),
+            destination = destination.display().to_string()
         )
+        .to_string()
     })?;
     let _ = config;
     Ok(())
@@ -611,7 +664,10 @@ impl Lock {
                 path: path.to_path_buf(),
             }),
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {
-                anyhow::bail!("ya hay otra ejecución en curso: {}", path.display())
+                anyhow::bail!(
+                    "{}",
+                    rust_i18n::t!("lock_exists", path = path.display().to_string())
+                )
             }
             Err(error) => Err(error.into()),
         }
@@ -666,6 +722,39 @@ fn chrono_like_timestamp() -> String {
 }
 
 #[cfg(test)]
+pub(crate) static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// RAII guard that switches the active locale for a test and restores the
+/// previous one on drop — including during assertion unwinding. Holds
+/// [`ENV_LOCK`] for the whole lifetime so parallel tests never observe a
+/// half-restored locale.
+#[cfg(test)]
+pub(crate) struct LocaleGuard {
+    _env_lock: std::sync::MutexGuard<'static, ()>,
+    previous: String,
+}
+
+#[cfg(test)]
+impl LocaleGuard {
+    pub(crate) fn set(locale: &str) -> Self {
+        let _env_lock = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+        let previous = rust_i18n::locale().to_string();
+        rust_i18n::set_locale(locale);
+        Self {
+            _env_lock,
+            previous,
+        }
+    }
+}
+
+#[cfg(test)]
+impl Drop for LocaleGuard {
+    fn drop(&mut self) {
+        rust_i18n::set_locale(&self.previous);
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
@@ -684,11 +773,6 @@ mod tests {
     /// against the same lock would race. This mutex serializes them so the
     /// lock contention is deterministic instead of flaky.
     static RUN_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
-    /// Tests that mutate `ORGANIZA_DOWNLOADS` / `USERPROFILE` env vars
-    /// race with each other under parallel execution. This mutex serializes
-    /// them so the assertions see the env state they set.
-    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     fn run_serialized(config: &Config, options: RunOptions) -> Result<()> {
         let _guard = RUN_LOCK.lock().unwrap_or_else(|err| err.into_inner());
@@ -1275,5 +1359,158 @@ mod tests {
             !temp.path().join("Text/log.txt").exists(),
             "log file was classified into Text/"
         );
+    }
+
+    #[test]
+    fn error_messages_are_translated_to_spanish() {
+        let _guard = LocaleGuard::set("es");
+
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+
+        // Test: empty source_directories error
+        fs::write(&config_path, "source_directories = [\"\"]\n").unwrap();
+        let result = load_config(&config_path);
+        assert!(result.is_err());
+        let error_msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            error_msg.contains("contiene una ruta vacía"),
+            "Expected Spanish error message 'contiene una ruta vacía', got: {}",
+            error_msg
+        );
+
+        // Test: invalid TOML error
+        fs::write(&config_path, "invalid toml syntax {{{\n").unwrap();
+        let result = load_config(&config_path);
+        assert!(result.is_err());
+        let error_msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            error_msg.contains("TOML inválido"),
+            "Expected Spanish TOML error 'TOML inválido', got: {}",
+            error_msg
+        );
+    }
+
+    #[test]
+    fn error_messages_are_translated_to_english() {
+        let _guard = LocaleGuard::set("en");
+
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+
+        // Test: empty source_directories error
+        fs::write(&config_path, "source_directories = [\"\"]\n").unwrap();
+        let result = load_config(&config_path);
+        assert!(result.is_err());
+        let error_msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            error_msg.contains("contains an empty path"),
+            "Expected English error message 'contains an empty path', got: {}",
+            error_msg
+        );
+
+        // Test: invalid TOML error
+        fs::write(&config_path, "invalid toml syntax {{{\n").unwrap();
+        let result = load_config(&config_path);
+        assert!(result.is_err());
+        let error_msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            error_msg.contains("Invalid TOML"),
+            "Expected English TOML error 'Invalid TOML', got: {}",
+            error_msg
+        );
+    }
+
+    #[test]
+    fn runtime_messages_are_translated_to_spanish() {
+        let _guard = LocaleGuard::set("es");
+
+        assert_eq!(&*rust_i18n::locale(), "es");
+
+        // Verify the specific runtime keys resolve to Spanish text
+        let skipped_dir = rust_i18n::t!("skipped_destination_is_dir", path = "/tmp/x");
+        assert!(
+            skipped_dir.contains("destino es una carpeta"),
+            "expected 'skipped_destination_is_dir' in Spanish, got: {}",
+            skipped_dir
+        );
+
+        let move_failed = rust_i18n::t!("move_failed", source = "/tmp/a", destination = "/tmp/b");
+        assert!(
+            move_failed.contains("No se pudo mover"),
+            "expected 'move_failed' in Spanish, got: {}",
+            move_failed
+        );
+
+        let processed_failures = rust_i18n::t!("processed_failures_count", count = "2");
+        assert!(
+            processed_failures.contains("no se pudieron procesar"),
+            "expected 'processed_failures_count' in Spanish, got: {}",
+            processed_failures
+        );
+    }
+
+    #[test]
+    fn runtime_messages_are_translated_to_english() {
+        let _guard = LocaleGuard::set("en");
+
+        assert_eq!(&*rust_i18n::locale(), "en");
+
+        let skipped_dir = rust_i18n::t!("skipped_destination_is_dir", path = "/tmp/x");
+        assert!(
+            skipped_dir.contains("destination is a directory"),
+            "expected 'skipped_destination_is_dir' in English, got: {}",
+            skipped_dir
+        );
+
+        let move_failed = rust_i18n::t!("move_failed", source = "/tmp/a", destination = "/tmp/b");
+        assert!(
+            move_failed.contains("Could not move"),
+            "expected 'move_failed' in English, got: {}",
+            move_failed
+        );
+
+        let processed_failures = rust_i18n::t!("processed_failures_count", count = "2");
+        assert!(
+            processed_failures.contains("could not be processed"),
+            "expected 'processed_failures_count' in English, got: {}",
+            processed_failures
+        );
+    }
+
+    #[test]
+    fn unsupported_config_language_fails_with_localized_error() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+        fs::write(&config_path, "language = \"fr\"\n").unwrap();
+
+        {
+            let _guard = LocaleGuard::set("es");
+            let error = format!("{:#}", load_config(&config_path).unwrap_err());
+            assert!(
+                error.contains("Idioma no soportado 'fr'"),
+                "expected Spanish 'invalid_language', got: {}",
+                error
+            );
+        }
+
+        {
+            let _guard = LocaleGuard::set("en");
+            let error = format!("{:#}", load_config(&config_path).unwrap_err());
+            assert!(
+                error.contains("Unsupported language 'fr'"),
+                "expected English 'invalid_language', got: {}",
+                error
+            );
+        }
+    }
+
+    #[test]
+    fn supported_config_language_is_accepted() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+        fs::write(&config_path, "language = \"es\"\n").unwrap();
+        let config = load_config(&config_path).unwrap();
+        assert_eq!(config.language.as_deref(), Some("es"));
     }
 }
