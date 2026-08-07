@@ -5,20 +5,19 @@ use std::path::PathBuf;
 
 // Re-export the t! macro from rust-i18n via our i18n module
 rust_i18n::i18n!("locales");
+use rust_i18n::t;
 
 #[derive(Debug, Parser)]
 #[command(
     name = "organiza",
     version,
-    about = "Organiza archivos por tipo en varias plataformas"
+    about = t!("about")
 )]
 struct Cli {
-    /// Archivo TOML de configuración.
-    #[arg(long, global = true, value_name = "FILE")]
+    #[arg(long, global = true, value_name = "FILE", help = t!("config_arg"))]
     config: Option<PathBuf>,
 
-    /// Idioma de la interfaz (en, es). Si no se especifica, detecta del sistema.
-    #[arg(long, global = true, value_name = "LANG")]
+    #[arg(long, global = true, value_name = "LANG", help = t!("lang_arg"))]
     lang: Option<String>,
 
     #[command(subcommand)]
@@ -27,47 +26,67 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Clasifica los archivos de las carpetas configuradas o indicadas.
+    #[command(about = t!("run_files"))]
     Run(RunCommand),
-    /// Comprueba que la configuración es válida sin mover archivos.
+    #[command(about = t!("validate_config"))]
     ValidateConfig,
 }
 
 #[derive(Debug, Args)]
 struct RunCommand {
-    /// Muestra los movimientos sin modificar el sistema de archivos.
-    #[arg(long)]
+    #[arg(long, help = t!("dry_run_arg"))]
     dry_run: bool,
 
-    /// Incluye archivos omitidos en la salida.
-    #[arg(long)]
+    #[arg(long, help = t!("verbose_arg"))]
     verbose: bool,
 
-    /// Sobrescribe el log configurado. Usa /dev/null o NUL para desactivarlo.
-    #[arg(long, value_name = "FILE")]
+    #[arg(long, value_name = "FILE", help = t!("log_arg"))]
     log: Option<PathBuf>,
 
-    /// Carpetas a procesar. Si se indican, sustituyen las de la configuración.
-    #[arg(value_name = "DIRECTORY")]
+    #[arg(value_name = "DIRECTORY", help = t!("directories_arg"))]
     directories: Vec<PathBuf>,
 }
 
-fn main() -> Result<()> {
-    let cli = Cli::parse();
-    // Cloned once at startup so resolve_config can distinguish the
-    // "user pointed --config at a missing path" branch from the
-    // "user said nothing and the default is absent" branch.
-    let config_path = cli.config.clone().unwrap_or_else(default_config_path);
+/// Scan the raw args for `--lang`/`--config` so the locale can be
+/// initialized *before* Clap builds the help/error output. Without this
+/// pre-pass, `--help` would always render in the default locale.
+fn pre_scan_args() -> (Option<String>, Option<PathBuf>) {
+    let mut lang = None;
+    let mut config = None;
+    let mut args = std::env::args().skip(1);
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--lang" => lang = args.next(),
+            "--config" => config = args.next().map(PathBuf::from),
+            _ if arg.starts_with("--lang=") => {
+                lang = Some(arg.trim_start_matches("--lang=").to_string())
+            }
+            _ if arg.starts_with("--config=") => {
+                config = Some(PathBuf::from(arg.trim_start_matches("--config=")))
+            }
+            _ => {}
+        }
+    }
+    (lang, config)
+}
 
-    // Load config first to get language preference
+fn main() -> Result<()> {
+    // Initialize the locale BEFORE Clap builds help/error output so the
+    // interface language applies to `--help`, subcommand docs, and errors.
+    let (cli_lang, cli_config) = pre_scan_args();
+    let config_path = cli_config.clone().unwrap_or_else(default_config_path);
     let config_lang = if config_path.exists() {
         load_config(&config_path).ok().and_then(|c| c.language)
     } else {
         None
     };
+    organiza::i18n::init_locale(cli_lang.as_deref(), config_lang.as_deref());
 
-    // Initialize locale before any user-facing messages
-    organiza::i18n::init_locale(cli.lang.as_deref(), config_lang.as_deref());
+    let cli = Cli::parse();
+    // Cloned once at startup so resolve_config can distinguish the
+    // "user pointed --config at a missing path" branch from the
+    // "user said nothing and the default is absent" branch.
+    let config_path = cli.config.clone().unwrap_or_else(default_config_path);
 
     match cli.command {
         None => {
@@ -136,5 +155,31 @@ mod tests {
     #[test]
     fn cli_name_is_organiza() {
         assert_eq!(Cli::command().get_name(), "organiza");
+    }
+
+    /// Help texts must follow the active locale, not a hardcoded language.
+    #[test]
+    fn cli_help_follows_locale() {
+        rust_i18n::set_locale("es");
+        let es_about = Cli::command()
+            .get_about()
+            .map(|text| text.to_string())
+            .unwrap_or_default();
+        assert!(
+            es_about.contains("Organiza archivos"),
+            "expected Spanish about text, got: {}",
+            es_about
+        );
+
+        rust_i18n::set_locale("en");
+        let en_about = Cli::command()
+            .get_about()
+            .map(|text| text.to_string())
+            .unwrap_or_default();
+        assert!(
+            en_about.contains("Organize files"),
+            "expected English about text, got: {}",
+            en_about
+        );
     }
 }

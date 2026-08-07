@@ -125,8 +125,13 @@ pub fn resolve_config(cli_config: Option<&Path>, positional_dirs: &[PathBuf]) ->
 
     let mut config = match (cli_config.is_some(), config_path.exists()) {
         (false, false) => Config::default(),
-        _ => load_config(&config_path)
-            .with_context(|| format!("no se pudo leer {}", config_path.display()))?,
+        _ => load_config(&config_path).with_context(|| {
+            rust_i18n::t!(
+                "config_read_failed",
+                path = config_path.display().to_string()
+            )
+            .to_string()
+        })?,
     };
 
     if !positional_dirs.is_empty() {
@@ -236,8 +241,8 @@ pub fn run(config: &Config, options: RunOptions) -> Result<()> {
     drop(lock);
     if failures > 0 {
         anyhow::bail!(
-            "{} carpeta(s) o archivo(s) no se pudieron procesar",
-            failures
+            "{}",
+            rust_i18n::t!("processed_failures_count", count = failures.to_string())
         );
     }
     Ok(())
@@ -304,8 +309,9 @@ fn collect_top_level_directories(
         if count == 0 {
             continue;
         }
-        let canonical_src = fs::canonicalize(path)
-            .with_context(|| format!("no se pudo resolver {}", path.display()))?;
+        let canonical_src = fs::canonicalize(path).with_context(|| {
+            rust_i18n::t!("resolve_failed", path = path.display().to_string()).to_string()
+        })?;
         if skip_paths.contains(&canonical_src) {
             continue;
         }
@@ -361,7 +367,7 @@ fn move_file(
     let category = classify(source, composed);
     let destination_directory = root.join(&category);
     let requested_destination =
-        destination_directory.join(source.file_name().context("archivo sin nombre")?);
+        destination_directory.join(source.file_name().context(rust_i18n::t!("no_file_name"))?);
     let destination = match (requested_destination.exists(), options.conflict_policy) {
         (false, _) => requested_destination,
         (true, ConflictPolicy::Skip) => {
@@ -372,10 +378,13 @@ fn move_file(
         }
         (true, ConflictPolicy::Rename) => unique_destination(&requested_destination),
         (true, ConflictPolicy::Overwrite) if requested_destination.is_dir() => {
-            logger.line(format!(
-                "Omitido: destino es una carpeta: {}",
-                requested_destination.display()
-            ))?;
+            logger.line(
+                rust_i18n::t!(
+                    "skipped_destination_is_dir",
+                    path = requested_destination.display().to_string()
+                )
+                .to_string(),
+            )?;
             return Ok(());
         }
         (true, ConflictPolicy::Overwrite) => requested_destination,
@@ -405,11 +414,12 @@ fn move_file(
         fs::remove_file(&destination)?;
     }
     fs::rename(source, &destination).with_context(|| {
-        format!(
-            "no se pudo mover {} a {}",
-            source.display(),
-            destination.display()
+        rust_i18n::t!(
+            "move_failed",
+            source = source.display().to_string(),
+            destination = destination.display().to_string()
         )
+        .to_string()
     })?;
     Ok(())
 }
@@ -426,38 +436,46 @@ fn move_dir(
 ) -> Result<()> {
     let file_name = source
         .file_name()
-        .context("directorio sin nombre")?
+        .context(rust_i18n::t!("no_dir_name"))?
         .to_owned();
     let requested_destination = destination_root.join(&file_name);
 
     let destination = match (requested_destination.exists(), options.conflict_policy) {
         (false, _) => requested_destination,
         (true, ConflictPolicy::Skip) => {
-            logger.line(format!("Omitido por conflicto: {}", source.display()))?;
+            logger.line(
+                rust_i18n::t!("skipped_conflict", path = source.display().to_string()).to_string(),
+            )?;
             return Ok(());
         }
         (true, ConflictPolicy::Rename) => unique_destination(&requested_destination),
         (true, ConflictPolicy::Overwrite) if requested_destination.is_dir() => {
-            logger.line(format!(
-                "Omitido: destino es una carpeta: {}",
-                requested_destination.display()
-            ))?;
+            logger.line(
+                rust_i18n::t!(
+                    "skipped_destination_is_dir",
+                    path = requested_destination.display().to_string()
+                )
+                .to_string(),
+            )?;
             return Ok(());
         }
         (true, ConflictPolicy::Overwrite) => requested_destination,
     };
 
     let action = if options.dry_run {
-        "Se movería"
+        rust_i18n::t!("dry_run").to_string()
     } else {
-        "Movido"
+        rust_i18n::t!("real_run").to_string()
     };
-    logger.line(format!(
-        "{}: {} → {}",
-        action,
-        source.display(),
-        DEFAULT_CATEGORY
-    ))?;
+    logger.line(
+        rust_i18n::t!(
+            "moved",
+            action = action,
+            source = source.display().to_string(),
+            category = DEFAULT_CATEGORY
+        )
+        .to_string(),
+    )?;
     if options.dry_run {
         return Ok(());
     }
@@ -467,11 +485,12 @@ fn move_dir(
         fs::remove_file(&destination)?;
     }
     fs::rename(source, &destination).with_context(|| {
-        format!(
-            "no se pudo mover {} a {}",
-            source.display(),
-            destination.display()
+        rust_i18n::t!(
+            "move_failed",
+            source = source.display().to_string(),
+            destination = destination.display().to_string()
         )
+        .to_string()
     })?;
     let _ = config;
     Ok(())
@@ -640,7 +659,10 @@ impl Lock {
                 path: path.to_path_buf(),
             }),
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {
-                anyhow::bail!("ya hay otra ejecución en curso: {}", path.display())
+                anyhow::bail!(
+                    "{}",
+                    rust_i18n::t!("lock_exists", path = path.display().to_string())
+                )
             }
             Err(error) => Err(error.into()),
         }
@@ -695,6 +717,9 @@ fn chrono_like_timestamp() -> String {
 }
 
 #[cfg(test)]
+pub(crate) static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
@@ -713,11 +738,6 @@ mod tests {
     /// against the same lock would race. This mutex serializes them so the
     /// lock contention is deterministic instead of flaky.
     static RUN_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
-    /// Tests that mutate `ORGANIZA_DOWNLOADS` / `USERPROFILE` env vars
-    /// race with each other under parallel execution. This mutex serializes
-    /// them so the assertions see the env state they set.
-    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     fn run_serialized(config: &Config, options: RunOptions) -> Result<()> {
         let _guard = RUN_LOCK.lock().unwrap_or_else(|err| err.into_inner());
@@ -1379,9 +1399,29 @@ mod tests {
         let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
         rust_i18n::set_locale("es");
 
-        // This test will verify runtime messages like "Processing", "Moved", etc.
-        // For now, we just verify the locale is set correctly
         assert_eq!(&*rust_i18n::locale(), "es");
+
+        // Verify the specific runtime keys resolve to Spanish text
+        let skipped_dir = rust_i18n::t!("skipped_destination_is_dir", path = "/tmp/x");
+        assert!(
+            skipped_dir.contains("destino es una carpeta"),
+            "expected 'skipped_destination_is_dir' in Spanish, got: {}",
+            skipped_dir
+        );
+
+        let move_failed = rust_i18n::t!("move_failed", source = "/tmp/a", destination = "/tmp/b");
+        assert!(
+            move_failed.contains("No se pudo mover"),
+            "expected 'move_failed' in Spanish, got: {}",
+            move_failed
+        );
+
+        let processed_failures = rust_i18n::t!("processed_failures_count", count = "2");
+        assert!(
+            processed_failures.contains("no se pudieron procesar"),
+            "expected 'processed_failures_count' in Spanish, got: {}",
+            processed_failures
+        );
     }
 
     #[test]
@@ -1389,8 +1429,27 @@ mod tests {
         let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
         rust_i18n::set_locale("en");
 
-        // This test will verify runtime messages like "Processing", "Moved", etc.
-        // For now, we just verify the locale is set correctly
         assert_eq!(&*rust_i18n::locale(), "en");
+
+        let skipped_dir = rust_i18n::t!("skipped_destination_is_dir", path = "/tmp/x");
+        assert!(
+            skipped_dir.contains("destination is a directory"),
+            "expected 'skipped_destination_is_dir' in English, got: {}",
+            skipped_dir
+        );
+
+        let move_failed = rust_i18n::t!("move_failed", source = "/tmp/a", destination = "/tmp/b");
+        assert!(
+            move_failed.contains("Could not move"),
+            "expected 'move_failed' in English, got: {}",
+            move_failed
+        );
+
+        let processed_failures = rust_i18n::t!("processed_failures_count", count = "2");
+        assert!(
+            processed_failures.contains("could not be processed"),
+            "expected 'processed_failures_count' in English, got: {}",
+            processed_failures
+        );
     }
 }
