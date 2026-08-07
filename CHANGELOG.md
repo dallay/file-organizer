@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/dallay/file-organizer/compare/v0.2.1...v0.3.0) (2026-08-07)
+
+
+### Features
+
+* **i18n:** add English/Spanish internationalization ([#15](https://github.com/dallay/file-organizer/issues/15)) ([5fb83e6](https://github.com/dallay/file-organizer/commit/5fb83e6c891b077beafc870ac29723a62c0ee693))
+* make run subcommand optional for quicker execution ([#13](https://github.com/dallay/file-organizer/issues/13)) ([ea2e82a](https://github.com/dallay/file-organizer/commit/ea2e82a83e20108fad6ab4fb2a17225b83cd4f35))
+
 ## [0.2.1](https://github.com/dallay/file-organizer/compare/v0.2.0...v0.2.1) (2026-08-05)
 
 
