@@ -124,9 +124,10 @@ where
 
 /// Cut a prefix off an `OsStr`, preserving bytes that are not valid UTF-8.
 ///
-/// On Unix, `OsStr` is a byte slice, so we strip the raw bytes. Elsewhere we
-/// fall back to the lossy text, which is the closest portable approximation.
-/// The prefix is pure ASCII, so the check before this call is lossless.
+/// On Unix, `OsStr` is a byte slice, so we strip the raw bytes. On Windows it
+/// is a WTF-16 slice, so we strip the raw wide chars. Elsewhere we fall back
+/// to the lossy text. The prefix is pure ASCII, so the check before this call
+/// is lossless.
 fn strip_os_prefix(value: &std::ffi::OsStr, prefix: &std::ffi::OsStr) -> std::ffi::OsString {
     #[cfg(unix)]
     {
@@ -135,12 +136,19 @@ fn strip_os_prefix(value: &std::ffi::OsStr, prefix: &std::ffi::OsStr) -> std::ff
         let prefix_len = prefix.len();
         std::ffi::OsString::from_vec(bytes[prefix_len..].to_vec())
     }
-    #[cfg(not(unix))]
+    #[cfg(windows)]
+    {
+        use std::os::windows::ffi::{OsStrExt, OsStringExt};
+        let value_wide: Vec<u16> = value.encode_wide().collect();
+        let prefix_len = prefix.encode_wide().count();
+        std::ffi::OsString::from_wide(&value_wide[prefix_len..])
+    }
+    #[cfg(not(any(unix, windows)))]
     {
         std::ffi::OsString::from(
             value
                 .to_string_lossy()
-                .trim_start_matches(&prefix.to_string_lossy()),
+                .trim_start_matches(prefix.to_string_lossy().as_ref()),
         )
     }
 }
