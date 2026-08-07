@@ -15,7 +15,7 @@ struct Cli {
     config: Option<PathBuf>,
 
     #[command(subcommand)]
-    command: Command,
+    command: Option<Command>,
 }
 
 #[derive(Debug, Subcommand)]
@@ -53,7 +53,22 @@ fn main() -> Result<()> {
     let config_path = cli.config.clone().unwrap_or_else(default_config_path);
 
     match cli.command {
-        Command::ValidateConfig => {
+        None => {
+            // Sin subcomando: ejecutar organización con configuración por defecto
+            let config = resolve_config(cli.config.as_deref(), &[])?;
+            if config.source_directories.is_empty() {
+                anyhow::bail!("no hay carpetas configuradas. Configura source_directories o usa 'organiza run DIRECTORY'");
+            }
+            run(
+                &config,
+                RunOptions {
+                    dry_run: false,
+                    verbose: false,
+                    conflict_policy: config.on_conflict,
+                },
+            )?;
+        }
+        Some(Command::ValidateConfig) => {
             let config = match (cli.config.is_some(), config_path.exists()) {
                 (false, false) => organiza::Config::default(),
                 _ => load_config(&config_path)
@@ -62,7 +77,7 @@ fn main() -> Result<()> {
             println!("Configuración válida: {}", config_path.display());
             println!("Carpetas configuradas: {}", config.source_directories.len());
         }
-        Command::Run(command) => {
+        Some(Command::Run(command)) => {
             let mut config = resolve_config(cli.config.as_deref(), &command.directories)?;
             if config.source_directories.is_empty() {
                 anyhow::bail!("no hay carpetas configuradas ni indicadas en la línea de comandos");
