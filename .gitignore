@@ -2,6 +2,7 @@
 # managed block below. AgentSync owns only the marker-delimited block.
 target/
 .DS_Store
+tmp/
 # npm wrapper build artifacts (outside the AgentSync block)
 npm/**/node_modules/
 npm/organiza/lib/
