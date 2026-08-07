@@ -1,6 +1,6 @@
 {
 	"name": "@dallay/organiza",
-	"version": "0.1.0",
+	"version": "0.2.1",
 	"description": "A fast cross-platform file organizer CLI that sorts files by type into category folders.",
 	"author": "Yuniel Acosta <yunielacosta738@gmail.com>",
 	"license": "MIT",
@@ -43,12 +43,12 @@
 		"typescript": "^7.0.0"
 	},
 	"optionalDependencies": {
-		"@dallay/organiza-darwin-arm64": "0.1.0",
-		"@dallay/organiza-darwin-x64": "0.1.0",
-		"@dallay/organiza-linux-arm64": "0.1.0",
-		"@dallay/organiza-linux-x64": "0.1.0",
-		"@dallay/organiza-windows-arm64": "0.1.0",
-		"@dallay/organiza-windows-x64": "0.1.0"
+		"@dallay/organiza-darwin-arm64": "0.2.1",
+		"@dallay/organiza-darwin-x64": "0.2.1",
+		"@dallay/organiza-linux-arm64": "0.2.1",
+		"@dallay/organiza-linux-x64": "0.2.1",
+		"@dallay/organiza-windows-arm64": "0.2.1",
+		"@dallay/organiza-windows-x64": "0.2.1"
 	},
 	"engines": {
 		"node": ">=18"

@@ -1,52 +1,56 @@
-# organiza en Rust
+# O R G A N I Z A
 
-Motor multiplataforma para macOS, Linux y Windows. La lógica de clasificación vive en un binario Rust; los schedulers de cada sistema operativo solo lo ejecutan.
+Multiplatform engine for macOS, Linux, and Windows. The classification logic lives in a Rust binary; the schedulers of each operating system only execute it.
 
-## Instalar
+## Install
 
-Hay tres canales de instalación, todos publicados desde el mismo tag de release:
+There are three installation channels, all published from the same release tag:
 
 ```bash
 # 1. crates.io
 cargo install organiza
 
-# 2. npm (wrapper con binarios por plataforma)
+# 2. npm (wrapper with binaries per platform)
 npm install -g @dallay/organiza
 
-# 3. Docker (multi-arquitectura linux/amd64 + linux/arm64)
+# 3. Docker (multi-architecture linux/amd64 + linux/arm64)
 docker pull yacosta738/organiza
 docker pull ghcr.io/dallay/organiza
 ```
 
-También puedes descargar el binario de tu plataforma desde los assets del [GitHub Release](https://github.com/dallay/file-organizer/releases).
+You can also download your platform's binary from the assets of the [GitHub Release](https://github.com/dallay/file-organizer/releases).
 
-## Compilar
+## Compile
 
-Requiere Rust estable:
+Requires stable Rust:
 
 ```bash
 cargo test
 cargo build --release
 ```
 
-El binario queda en `target/release/organiza` (`organiza.exe` en Windows).
+The binary is built at `target/release/organiza` (`organiza.exe` on Windows).
 
-> Las instrucciones de **Configurar**, **Instalar como servicio** y los launchers de `platform/` asumen un *source checkout* (build local desde el repositorio). Los usuarios que instalen via `cargo install organiza` o el wrapper npm `@dallay/organiza` pueden descargar `config.example.toml` y los launchers directamente desde [el repositorio en GitHub](https://github.com/dallay/file-organizer).
+> The **Configure**, **Install as service** instructions, and the launchers in `platform/` assume a *source checkout* (local build from the repository). Users who install via `cargo install organiza` or the npm wrapper `@dallay/organiza` can download `config.example.toml` and the launchers directly from [the repository on GitHub](https://github.com/dallay/file-organizer).
 
-## Configurar
+## Configure
 
 ```bash
 mkdir -p "$HOME/.config/organiza"
 cp config.example.toml "$HOME/.config/organiza/config.toml"
 ```
 
-En Windows, copia el archivo a `%APPDATA%\\organiza\\config.toml`. Edita las carpetas y ejecuta:
+On Windows, copy the file to `%APPDATA%\\organiza\\config.toml`. Edit the folders and run:
 
 ```bash
+# macOS/Linux
 organiza --config ~/.config/organiza/config.toml validate-config
+
+# Windows (PowerShell)
+organiza --config $env:APPDATA\organiza\config.toml validate-config
 ```
 
-## Ejecutar
+## Run
 
 ```bash
 organiza run --dry-run
@@ -55,7 +59,7 @@ organiza run --verbose ~/Downloads
 organiza run --config ./config.toml --log /dev/null
 ```
 
-Las carpetas indicadas al final sustituyen a `source_directories`. El comportamiento predeterminado espera 60 segundos, ignora ocultos y renombra conflictos (`archivo (1).pdf`).
+The folders specified at the end replace `source_directories`. The default behavior waits 60 seconds, ignores hidden files, and renames conflicts (`file (1).pdf`).
 
 ## Default categories
 
@@ -109,27 +113,27 @@ If you run `organiza run` before creating a config file, the binary synthesizes 
 
 POSIX `launchd` and `systemd` schedulers that previously no-op'd (no config + no Downloads override) will begin organizing on each tick. The launchers in `platform/` now invoke `organiza run`.
 
-## Automatización por plataforma
+## Platform automation
 
-- **macOS:** usa Shortcuts o `launchd` para ejecutar `organiza run`.
-- **Linux:** usa el `systemd` user timer incluido en `platform/linux/`.
-- **Windows:** usa Task Scheduler con `schtasks`.
+- **macOS:** use Shortcuts or `launchd` to run `organiza run`.
+- **Linux:** use the `systemd` user timer included in `platform/linux/`.
+- **Windows:** use Task Scheduler with `schtasks`.
 
-El lock se crea con `create_dir`, por lo que no depende de `flock` y funciona en los tres sistemas.
+The lock is created with `create_dir`, so it does not rely on `flock` and works across all three systems.
 
-### macOS con launchd
+### macOS with launchd
 
 ```bash
 mkdir -p "$HOME/.local/bin" "$HOME/Library/LaunchAgents"
 cp target/release/organiza "$HOME/.local/bin/"
-sed "s#TU_USUARIO#$(whoami)#" platform/macos/com.organiza.plist.example \
+sed "s#YOUR_USERNAME#$(whoami)#" platform/macos/com.organiza.plist.example \
   > "$HOME/Library/LaunchAgents/com.organiza.plist"
 launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.organiza.plist"
 ```
 
-Para detenerlo: `launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.organiza.plist"`.
+To stop it: `launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.organiza.plist"`.
 
-### Linux con systemd user
+### Linux with systemd user
 
 ```bash
 mkdir -p "$HOME/.local/bin" "$HOME/.config/systemd/user"
@@ -140,18 +144,20 @@ systemctl --user daemon-reload
 systemctl --user enable --now organiza.timer
 ```
 
-### Windows con Task Scheduler
+### Windows with Task Scheduler
 
-Después de copiar `organiza.exe` a una ruta permanente y crear el TOML en `%APPDATA%\\organiza\\config.toml`:
+After copying `organiza.exe` to a permanent location (e.g., `C:\Users\YOUR_USERNAME\.local\bin\organiza.exe`) and creating the TOML at `%APPDATA%\\organiza\\config.toml`:
 
 ```powershell
 schtasks /Create /TN "organiza" /SC MINUTE /MO 5 `
-  /TR "C:\\Users\\TU_USUARIO\\.local\\bin\\organiza.exe run" /F
+  /TR "C:\Users\YOUR_USERNAME\.local\bin\organiza.exe run" /F
 ```
 
-## Alcance actual
+Replace `YOUR_USERNAME` with your actual Windows username, or adjust the path to match where you copied the executable.
 
-El movimiento utiliza `rename`, que es atómico dentro del mismo volumen. Si el origen y destino están en volúmenes distintos, se informa del error en vez de borrar o copiar parcialmente el archivo.
+## Current scope
+
+The move operation uses `rename`, which is atomic within the same volume. If the source and destination are on different volumes, an error is reported instead of partially copying the file. When `on_conflict = "overwrite"` is configured and a cross-volume move fails, an existing destination file may be removed before the error is reported; for cross-volume safety, use `on_conflict = "rename"` or `on_conflict = "skip"`.
 
 ## Development tooling
 
