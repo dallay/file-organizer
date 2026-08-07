@@ -107,15 +107,42 @@ where
             _ if text.starts_with("--lang=") => {
                 lang = Some(text.trim_start_matches("--lang=").to_string())
             }
+            // The prefix check uses the lossy text only to recognize the
+            // ASCII option; the path itself is cut on the OsString bytes so
+            // non-Unicode path bytes survive untouched.
             _ if text.starts_with("--config=") => {
-                config = Some(PathBuf::from(
-                    text.trim_start_matches("--config=").to_string(),
-                ))
+                config = Some(PathBuf::from(strip_os_prefix(
+                    &arg,
+                    OsStr::new("--config="),
+                )))
             }
             _ => {}
         }
     }
     (lang, config)
+}
+
+/// Cut a prefix off an `OsStr`, preserving bytes that are not valid UTF-8.
+///
+/// On Unix, `OsStr` is a byte slice, so we strip the raw bytes. Elsewhere we
+/// fall back to the lossy text, which is the closest portable approximation.
+/// The prefix is pure ASCII, so the check before this call is lossless.
+fn strip_os_prefix(value: &std::ffi::OsStr, prefix: &std::ffi::OsStr) -> std::ffi::OsString {
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::{OsStrExt, OsStringExt};
+        let bytes = value.as_bytes();
+        let prefix_len = prefix.len();
+        std::ffi::OsString::from_vec(bytes[prefix_len..].to_vec())
+    }
+    #[cfg(not(unix))]
+    {
+        std::ffi::OsString::from(
+            value
+                .to_string_lossy()
+                .trim_start_matches(&prefix.to_string_lossy()),
+        )
+    }
 }
 
 fn main() -> Result<()> {
@@ -269,6 +296,40 @@ mod tests {
             config,
             Some(PathBuf::from("./config.toml")),
             "--config=... should still be parsed after a non-UTF-8 value"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn pre_scan_args_preserves_non_utf8_config_path_bytes() {
+        use std::os::unix::ffi::{OsStrExt, OsStringExt};
+        // A non-UTF-8 path passed via --config= must keep its raw bytes, not
+        // be replaced with U+FFFD by a lossy text conversion.
+        let raw_path = vec![0xFF, 0xFE];
+        let mut arg = b"--config=".to_vec();
+        arg.extend_from_slice(&raw_path);
+        let (lang, config) = pre_scan_args_from([std::ffi::OsString::from_vec(arg)]);
+        assert_eq!(lang, None);
+        let path = config.expect("--config= path should be parsed");
+        assert_eq!(
+            path.as_os_str().as_bytes(),
+            raw_path,
+            "non-UTF-8 bytes in the config path must be preserved"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn pre_scan_args_strips_config_prefix_only_once() {
+        // A file literally named "--config=foo.toml" passed as
+        // --config=--config=foo.toml must keep the inner "--config=" bytes;
+        // trim_start_matches would remove every occurrence.
+        let (_, config) =
+            pre_scan_args_from([std::ffi::OsString::from("--config=--config=foo.toml")]);
+        assert_eq!(
+            config,
+            Some(PathBuf::from("--config=foo.toml")),
+            "only one '--config=' prefix should be stripped"
         );
     }
 
