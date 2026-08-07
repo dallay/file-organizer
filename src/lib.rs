@@ -9,6 +9,10 @@ use std::time::{Duration, SystemTime};
 use walkdir::{DirEntry, WalkDir};
 
 mod categories;
+pub mod i18n;
+
+// Re-export the i18n macro for use within this crate
+rust_i18n::i18n!("locales");
 
 #[cfg(test)]
 pub(crate) use categories::category_for;
@@ -36,6 +40,8 @@ pub struct Config {
     pub min_age_seconds: u64,
     pub ignore_hidden: bool,
     pub log_file: Option<PathBuf>,
+    /// Interface language (en, es). If not specified, detects from system.
+    pub language: Option<String>,
     /// Extension-to-category overrides. Keys are case-insensitive.
     pub extensions: HashMap<String, String>,
     /// User-supplied category declarations. Order = TOML declaration order.
@@ -51,6 +57,7 @@ impl Default for Config {
             min_age_seconds: 60,
             ignore_hidden: true,
             log_file: None,
+            language: None,
             extensions: HashMap::new(),
             categories: Vec::new(),
         }

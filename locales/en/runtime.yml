@@ -1,0 +1,10 @@
+# Execution and log messages
+folder_not_exists: "Folder does not exist: %{path}"
+processing: "Processing: %{path}"
+error_occurred: "ERROR: %{error}"
+skipped_recent: "Recent, skipped: %{path}"
+skipped_conflict: "Skipped due to conflict: %{path}"
+renamed_conflict: "Renamed due to conflict: %{old} -> %{new}"
+moved: "%{action}: %{source} -> %{category}"
+dry_run: "DRY RUN"
+real_run: "Moved"

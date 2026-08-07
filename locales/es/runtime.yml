@@ -1,0 +1,10 @@
+# Mensajes de ejecución y logs
+folder_not_exists: "La carpeta no existe: %{path}"
+processing: "Procesando: %{path}"
+error_occurred: "ERROR: %{error}"
+skipped_recent: "Reciente, omitido: %{path}"
+skipped_conflict: "Omitido por conflicto: %{path}"
+renamed_conflict: "Renombrado por conflicto: %{old} -> %{new}"
+moved: "%{action}: %{source} -> %{category}"
+dry_run: "SIMULACIÓN"
+real_run: "Movido"
