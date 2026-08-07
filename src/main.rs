@@ -57,7 +57,7 @@ fn main() -> Result<()> {
             // Sin subcomando: ejecutar organización con configuración por defecto
             let config = resolve_config(cli.config.as_deref(), &[])?;
             if config.source_directories.is_empty() {
-                anyhow::bail!("no hay carpetas configuradas ni indicadas en la línea de comandos");
+                anyhow::bail!("no hay carpetas configuradas. Configura source_directories o usa 'organiza run DIRECTORY'");
             }
             run(
                 &config,
