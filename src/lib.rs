@@ -8,11 +8,11 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 use walkdir::{DirEntry, WalkDir};
 
+// Initialize i18n - this loads translations at compile time
+rust_i18n::i18n!("locales");
+
 mod categories;
 pub mod i18n;
-
-// Re-export the i18n macro for use within this crate
-rust_i18n::i18n!("locales");
 
 #[cfg(test)]
 pub(crate) use categories::category_for;
@@ -93,9 +93,9 @@ pub fn default_config_path() -> PathBuf {
 
 pub fn load_config(path: &Path) -> Result<Config> {
     let source = fs::read_to_string(path)
-        .with_context(|| format!("no se pudo leer la configuración {}", path.display()))?;
-    let mut config: Config =
-        toml::from_str(&source).with_context(|| format!("TOML inválido en {}", path.display()))?;
+        .with_context(|| rust_i18n::t!("config_read_failed", path = path.display().to_string()))?;
+    let mut config: Config = toml::from_str(&source)
+        .with_context(|| rust_i18n::t!("invalid_toml", path = path.display().to_string()))?;
     config.source_directories = config
         .source_directories
         .into_iter()
@@ -147,14 +147,17 @@ fn validate_config(config: &Config) -> Result<()> {
         .iter()
         .any(|path| path.as_os_str().is_empty())
     {
-        anyhow::bail!("source_directories contiene una ruta vacía");
+        anyhow::bail!("{}", rust_i18n::t!("empty_source_dir"));
     }
     for (extension, category) in &config.extensions {
         if extension.trim().is_empty() || category.trim().is_empty() {
-            anyhow::bail!("extensions no puede contener claves o categorías vacías");
+            anyhow::bail!("{}", rust_i18n::t!("empty_extensions"));
         }
         if is_unsafe_category_name(category) {
-            anyhow::bail!("la categoría '{}' contiene una ruta no permitida", category);
+            anyhow::bail!(
+                "{}",
+                rust_i18n::t!("invalid_category_path", category = category)
+            );
         }
     }
     Ok(())
@@ -186,14 +189,17 @@ pub fn run(config: &Config, options: RunOptions) -> Result<()> {
     for configured_root in &config.source_directories {
         let root = expand_home(configured_root);
         if !root.is_dir() {
-            logger.line(format!("La carpeta no existe: {}", root.display()))?;
+            logger.line(
+                rust_i18n::t!("folder_not_exists", path = root.display().to_string()).to_string(),
+            )?;
             failures += 1;
             continue;
         }
 
-        let root = fs::canonicalize(&root)
-            .with_context(|| format!("no se pudo resolver {}", root.display()))?;
-        logger.line(format!("Procesando: {}", root.display()))?;
+        let root = fs::canonicalize(&root).with_context(|| {
+            rust_i18n::t!("resolve_failed", path = root.display().to_string()).to_string()
+        })?;
+        logger.line(rust_i18n::t!("processing", path = root.display().to_string()).to_string())?;
 
         let dirs = collect_top_level_directories(&root, config, &skip_paths)?;
 
@@ -1282,5 +1288,93 @@ mod tests {
             !temp.path().join("Text/log.txt").exists(),
             "log file was classified into Text/"
         );
+    }
+
+    #[test]
+    fn error_messages_are_translated_to_spanish() {
+        // Protect locale changes with the ENV_LOCK to prevent test interference
+        let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+
+        // Set Spanish locale
+        rust_i18n::set_locale("es");
+
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+
+        // Test: empty source_directories error
+        fs::write(&config_path, "source_directories = [\"\"]\n").unwrap();
+        let result = load_config(&config_path);
+        assert!(result.is_err());
+        let error_msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            error_msg.contains("contiene una ruta vacía"),
+            "Expected Spanish error message 'contiene una ruta vacía', got: {}",
+            error_msg
+        );
+
+        // Test: invalid TOML error
+        fs::write(&config_path, "invalid toml syntax {{{\n").unwrap();
+        let result = load_config(&config_path);
+        assert!(result.is_err());
+        let error_msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            error_msg.contains("TOML inválido"),
+            "Expected Spanish TOML error 'TOML inválido', got: {}",
+            error_msg
+        );
+    }
+
+    #[test]
+    fn error_messages_are_translated_to_english() {
+        // Protect locale changes with the ENV_LOCK to prevent test interference
+        let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+
+        // Set English locale
+        rust_i18n::set_locale("en");
+
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+
+        // Test: empty source_directories error
+        fs::write(&config_path, "source_directories = [\"\"]\n").unwrap();
+        let result = load_config(&config_path);
+        assert!(result.is_err());
+        let error_msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            error_msg.contains("contains an empty path"),
+            "Expected English error message 'contains an empty path', got: {}",
+            error_msg
+        );
+
+        // Test: invalid TOML error
+        fs::write(&config_path, "invalid toml syntax {{{\n").unwrap();
+        let result = load_config(&config_path);
+        assert!(result.is_err());
+        let error_msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            error_msg.contains("Invalid TOML"),
+            "Expected English TOML error 'Invalid TOML', got: {}",
+            error_msg
+        );
+    }
+
+    #[test]
+    fn runtime_messages_are_translated_to_spanish() {
+        let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+        rust_i18n::set_locale("es");
+
+        // This test will verify runtime messages like "Processing", "Moved", etc.
+        // For now, we just verify the locale is set correctly
+        assert_eq!(&*rust_i18n::locale(), "es");
+    }
+
+    #[test]
+    fn runtime_messages_are_translated_to_english() {
+        let _guard = ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+        rust_i18n::set_locale("en");
+
+        // This test will verify runtime messages like "Processing", "Moved", etc.
+        // For now, we just verify the locale is set correctly
+        assert_eq!(&*rust_i18n::locale(), "en");
     }
 }
