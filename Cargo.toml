@@ -29,7 +29,7 @@ anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 rust-i18n = "4.2"
 serde = { version = "1", features = ["derive"] }
-toml = "0.9"
+toml = "1.0"
 walkdir = "2"
 
 [dev-dependencies]
