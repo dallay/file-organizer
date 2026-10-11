@@ -50,7 +50,7 @@ RUN strip /build/target/release/organiza && \
 # Stage 2: Runtime environment
 # Minimal Alpine image - no Rust toolchain, no build dependencies
 # -----------------------------------------------------------------------------
-FROM alpine:3.23 AS runtime
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS runtime
 
 # Labels for container metadata (OCI standard)
 LABEL org.opencontainers.image.title="organiza" \
