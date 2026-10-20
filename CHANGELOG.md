@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.1](https://github.com/dallay/file-organizer/compare/v0.3.0...v0.3.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **deps:** update cargo dependencies ([f6ffa8e](https://github.com/dallay/file-organizer/commit/f6ffa8e3920d91b13387e091205f9076db7a694a))
+* **deps:** update rust crate toml to v1 ([#19](https://github.com/dallay/file-organizer/issues/19)) ([7f748b7](https://github.com/dallay/file-organizer/commit/7f748b72959751000c784a25299656bfb12a4c5c))
+
+
+### Chores
+
+* **deps:** update alpine docker tag to v3.24 ([6af632b](https://github.com/dallay/file-organizer/commit/6af632bdc75a754ad6ac92242f2eec012d413ae0))
+* **deps:** update github actions ([0069680](https://github.com/dallay/file-organizer/commit/0069680032197b5ea6c9afdc6f5cbb8faffe501b))
+
 ## [0.3.0](https://github.com/dallay/file-organizer/compare/v0.2.1...v0.3.0) (2026-08-07)
 
 
