@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.1](https://github.com/dallay/file-organizer/compare/v0.3.0...v0.3.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* **deps:** update cargo dependencies ([f6ffa8e](https://github.com/dallay/file-organizer/commit/f6ffa8e3920d91b13387e091205f9076db7a694a))
+* **deps:** update rust crate toml to v1 ([#19](https://github.com/dallay/file-organizer/issues/19)) ([7f748b7](https://github.com/dallay/file-organizer/commit/7f748b72959751000c784a25299656bfb12a4c5c))
+
+
+### Chores
+
+* **deps:** update alpine docker tag to v3.24 ([6af632b](https://github.com/dallay/file-organizer/commit/6af632bdc75a754ad6ac92242f2eec012d413ae0))
+* **deps:** update cargo dependencies ([4d50d54](https://github.com/dallay/file-organizer/commit/4d50d54227edf77b675be1dc9f2b1640c8337772))
+* **deps:** update cargo dependencies ([c214751](https://github.com/dallay/file-organizer/commit/c214751411d025ee9c6253854ae4b8105d720726))
+* **deps:** update dependency node to v26 ([#20](https://github.com/dallay/file-organizer/issues/20)) ([36183db](https://github.com/dallay/file-organizer/commit/36183db0193973a31a8b58e16645cf9ae5491bfe))
+* **deps:** update github actions ([0069680](https://github.com/dallay/file-organizer/commit/0069680032197b5ea6c9afdc6f5cbb8faffe501b))
+* **deps:** update rust crate clap to v4.6.8 ([b7c2911](https://github.com/dallay/file-organizer/commit/b7c29117be81f35cee0aa7d49ca045f4971f8bed))
+* **deps:** update rust crate clap to v4.6.9 ([af27296](https://github.com/dallay/file-organizer/commit/af2729614170ff658bb17b5a25e148aafc27d5c4))
+* **deps:** update rust crate toml to v1.2.1 ([5ddeb62](https://github.com/dallay/file-organizer/commit/5ddeb62f06568d858f0db2bcba95f1913205d78a))
+
 ## [0.3.0](https://github.com/dallay/file-organizer/compare/v0.2.1...v0.3.0) (2026-08-07)
 
 
